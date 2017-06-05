@@ -61,6 +61,8 @@ import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -314,13 +316,20 @@ public class ClientsApiResource {
 
 	@GET
 	@Path("bulkimporttemplate")
-	@Produces("application/vnd.ms-excel")
+	//@Produces("application/vnd.ms-excel")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public Response getClientTemplate() {
 		final XSSFWorkbook wb = new XSSFWorkbook();
+		ClientData clientData=this.clientReadPlatformService.retrieveTemplate(1L, true);
+		Sheet clientsheet =wb.createSheet("Clients");
+		Row row=clientsheet.createRow(1);
+		row.createCell(1).setCellValue(clientData.accountNo());
+		row.createCell(2).setCellValue(clientData.displayName());
 		StreamingOutput streamOutput = new StreamingOutput() {
 			@Override
 			public void write(OutputStream out) throws IOException, WebApplicationException {
 				wb.write(out);
+				out.close();
 			}
 		};
 		ResponseBuilder response = Response.ok(streamOutput, "application/vnd.ms-excel");
