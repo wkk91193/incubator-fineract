@@ -64,6 +64,7 @@ import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformS
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -322,9 +323,16 @@ public class ClientsApiResource {
 		final XSSFWorkbook wb = new XSSFWorkbook();
 		ClientData clientData=this.clientReadPlatformService.retrieveTemplate(1L, true);
 		Sheet clientsheet =wb.createSheet("Clients");
+			
 		Row row=clientsheet.createRow(1);
 		row.createCell(1).setCellValue(clientData.accountNo());
 		row.createCell(2).setCellValue(clientData.displayName());
+		row.createCell(3).setCellValue(clientData.getExternalId());
+		row.createCell(4).setCellValue(clientData.getFirstname());
+		row.createCell(5).setCellValue(clientData.getLastname());
+		row.createCell(6).setCellValue(clientData.officeName());
+		row.createCell(7).setCellValue(clientData.officeId());
+		
 		StreamingOutput streamOutput = new StreamingOutput() {
 			@Override
 			public void write(OutputStream out) throws IOException, WebApplicationException {
@@ -332,8 +340,9 @@ public class ClientsApiResource {
 				out.close();
 			}
 		};
-		ResponseBuilder response = Response.ok(streamOutput, "application/vnd.ms-excel");
+		ResponseBuilder response = Response.ok(streamOutput, "application/octet-stream");
 		response.header("content-disposition", "attachment; filename=clientTemplate.xls");
 		return response.build();
 	}
+	
 }
