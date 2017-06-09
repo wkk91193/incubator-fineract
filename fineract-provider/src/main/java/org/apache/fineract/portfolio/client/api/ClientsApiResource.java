@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.client.api;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -47,6 +50,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.dataimport.service.ClientWorkbook;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
@@ -61,8 +65,10 @@ import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +88,7 @@ public class ClientsApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+    private final ClientWorkbook clientworkbook;
 
     @Autowired
     public ClientsApiResource(final PlatformSecurityContext context, final ClientReadPlatformService readPlatformService,
@@ -90,7 +97,7 @@ public class ClientsApiResource {
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
+            final SavingsAccountReadPlatformService savingsAccountReadPlatformService,final ClientWorkbook clientworkbook) {
         this.context = context;
         this.clientReadPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -99,6 +106,7 @@ public class ClientsApiResource {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
+        this.clientworkbook=clientworkbook;
     }
 
     @GET
@@ -315,24 +323,42 @@ public class ClientsApiResource {
         return this.clientAccountSummaryToApiJsonSerializer.serialize(settings, clientAccount, CLIENT_ACCOUNTS_DATA_PARAMETERS);
     }
 
+//	@GET
+//	@Path("bulkimporttemplate")
+//	@Produces("application/vnd.ms-excel")
+//	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
+//	public Response getClientTemplate() {
+//		final HSSFWorkbook wb = new HSSFWorkbook();
+//		//ClientData clientData=this.clientReadPlatformService.retrieveTemplate(1L, false);
+//		ClientData clientData=clientReadPlatformService.retrieveOne(1L);
+//		Sheet clientsheet =wb.createSheet("Clients");
+//			
+//		Row row=clientsheet.createRow(1);
+//		row.createCell(1).setCellValue(clientData.accountNo());
+//		row.createCell(2).setCellValue(clientData.displayName());
+//		row.createCell(3).setCellValue(clientData.getExternalId());
+//		row.createCell(4).setCellValue(clientData.getFirstname());
+//		row.createCell(5).setCellValue(clientData.getLastname());
+//		row.createCell(6).setCellValue(clientData.officeName());
+//		row.createCell(7).setCellValue(clientData.officeId());
+//		
+//		StreamingOutput streamOutput = new StreamingOutput() {
+//			@Override
+//			public void write(OutputStream out) throws IOException, WebApplicationException {
+//				wb.write(out);
+//				out.close();
+//			}
+//		};
+//		ResponseBuilder response = Response.ok(streamOutput, "application/vnd.ms-excel");
+//		response.header("content-disposition", "attachment; filename=clientTemplate.xls");
+//		return response.build();
+//	}
 	@GET
 	@Path("bulkimporttemplate")
-	//@Produces("application/vnd.ms-excel")
-	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public Response getClientTemplate() {
-		final XSSFWorkbook wb = new XSSFWorkbook();
-		ClientData clientData=this.clientReadPlatformService.retrieveTemplate(1L, true);
-		Sheet clientsheet =wb.createSheet("Clients");
-			
-		Row row=clientsheet.createRow(1);
-		row.createCell(1).setCellValue(clientData.accountNo());
-		row.createCell(2).setCellValue(clientData.displayName());
-		row.createCell(3).setCellValue(clientData.getExternalId());
-		row.createCell(4).setCellValue(clientData.getFirstname());
-		row.createCell(5).setCellValue(clientData.getLastname());
-		row.createCell(6).setCellValue(clientData.officeName());
-		row.createCell(7).setCellValue(clientData.officeId());
-		
+	@Produces("application/vnd.ms-excel")
+	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response getClientTemplate(@QueryParam("clientType") final String clientType) {
+		Workbook wb=clientworkbook.getTemplate(clientType);
 		StreamingOutput streamOutput = new StreamingOutput() {
 			@Override
 			public void write(OutputStream out) throws IOException, WebApplicationException {
@@ -340,9 +366,10 @@ public class ClientsApiResource {
 				out.close();
 			}
 		};
-		ResponseBuilder response = Response.ok(streamOutput, "application/octet-stream");
+		ResponseBuilder response = Response.ok(streamOutput, "application/vnd.ms-excel");
 		response.header("content-disposition", "attachment; filename=clientTemplate.xls");
 		return response.build();
 	}
+
 	
 }

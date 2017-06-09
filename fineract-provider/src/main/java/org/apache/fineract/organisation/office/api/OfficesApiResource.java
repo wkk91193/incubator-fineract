@@ -55,6 +55,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -181,7 +182,7 @@ public class OfficesApiResource {
 	//@Produces("application/vnd.ms-excel")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public Response getOfficeTemplate() {
-		final XSSFWorkbook wb = new XSSFWorkbook();
+		final HSSFWorkbook wb = new HSSFWorkbook();
 		Collection<OfficeData> officeDataCollection=this.readPlatformService.retrieveAllOfficesForDropdown();
 		Sheet clientsheet =wb.createSheet("Clients");
 		int rowno=1;

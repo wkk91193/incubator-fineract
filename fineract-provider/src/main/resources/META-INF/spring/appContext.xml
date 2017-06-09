@@ -54,7 +54,8 @@
 										  org.apache.fineract.template.*,
 										  org.apache.fineract.template.service.*,
 										  org.apache.fineract.useradministration.*,
-										  org.apache.fineract.batch">
+										  org.apache.fineract.batch
+										  org.apache.fineract.dataimport.*">
 		<context:exclude-filter expression="org.springframework.stereotype.Controller"
 			type="annotation" />
 
