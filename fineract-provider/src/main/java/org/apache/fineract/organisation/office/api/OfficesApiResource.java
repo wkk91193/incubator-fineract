@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.organisation.office.api;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -32,8 +34,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
@@ -47,6 +53,9 @@ import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -165,4 +174,30 @@ public class OfficesApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
+    @GET
+	@Path("bulkimporttemplate")
+	//@Produces("application/vnd.ms-excel")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response getOfficeTemplate() {
+		final HSSFWorkbook wb = new HSSFWorkbook();
+		Collection<OfficeData> officeDataCollection=this.readPlatformService.retrieveAllOfficesForDropdown();
+		Sheet clientsheet =wb.createSheet("Clients");
+		int rowno=1;
+		for (OfficeData officeData : officeDataCollection) {
+			 Row row=clientsheet.createRow(rowno);
+			 row.createCell(1).setCellValue(officeData.name());
+			 row.createCell(2).setCellValue(officeData.getHierarchy());
+			 rowno++;
+		}
+		StreamingOutput streamOutput = new StreamingOutput() {
+			@Override
+			public void write(OutputStream out) throws IOException, WebApplicationException {
+				wb.write(out);
+				out.close();
+			}
+		};
+		ResponseBuilder response = Response.ok(streamOutput, "application/octet-stream");
+		response.header("content-disposition", "attachment; filename=office.xls");
+		return response.build();
+	}
 }
