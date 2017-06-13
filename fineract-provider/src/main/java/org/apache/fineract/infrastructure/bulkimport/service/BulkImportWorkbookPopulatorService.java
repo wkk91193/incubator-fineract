@@ -22,6 +22,6 @@ import javax.ws.rs.core.Response;
 
 public interface BulkImportWorkbookPopulatorService {
 
-  public Response getTemplate(final String entityType, final Long officeId, final Long staffId);
-
+  public Response getClientsTemplate(final String entityType, final Long officeId, final Long staffId);
+  public Response getOfficesTemplate(final String entityType,final Long officeId );
 }

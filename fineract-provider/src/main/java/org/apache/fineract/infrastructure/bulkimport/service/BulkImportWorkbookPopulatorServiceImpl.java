@@ -30,9 +30,12 @@ import org.apache.fineract.infrastructure.bulkimport.populator.OfficeSheetPopula
 import org.apache.fineract.infrastructure.bulkimport.populator.PersonnelSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.office.OfficeWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.office.api.OfficeApiConstants;
+import org.apache.fineract.organisation.office.api.OfficesApiResource;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -60,20 +63,40 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   }
 
   @Override
-  public Response getTemplate(final String entityType, final Long officeId, final Long staffId) {
+  public Response getClientsTemplate(final String entityType, final Long officeId, final Long staffId) {
 
     WorkbookPopulator populator = null;
     final Workbook workbook = new HSSFWorkbook();
     if (entityType.trim().equalsIgnoreCase(ClientApiConstants.CLIENT_RESOURCE_NAME)) {
       populator = populateClientWorkbook(officeId, staffId);
-    } else
+    }else
       throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
           "Unable to find requested resource");
     populator.populate(workbook);
     return buildResponse(workbook, entityType);
   }
+  @Override
+  public Response getOfficesTemplate(final String entityType, final Long officeId) {
+  	WorkbookPopulator populator=null;
+  	final Workbook workbook=new HSSFWorkbook();
+  	if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
+		populator=populateOfficeWorkbook(officeId);
+	} else {
+		throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+          "Unable to find requested resource");
+	}
+  	populator.populate(workbook);
+  	return buildResponse(workbook, entityType);
+  }
 
-  private WorkbookPopulator populateClientWorkbook(final Long officeId, final Long staffId) {
+
+  private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
+	  this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+	  List<OfficeData> offices = fetchOffices(officeId);
+	return new OfficeWorkbookPopulator(new OfficeSheetPopulator(offices));
+}
+
+private WorkbookPopulator populateClientWorkbook(final Long officeId, final Long staffId) {
     this.context.authenticatedUser().validateHasReadPermission("OFFICE");
     this.context.authenticatedUser().validateHasReadPermission("STAFF");
     List<OfficeData> offices = fetchOffices(officeId);
@@ -123,5 +146,6 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
     }
     return staff;
   }
+
 
 }
