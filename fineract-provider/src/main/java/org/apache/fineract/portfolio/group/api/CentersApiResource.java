@@ -32,6 +32,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
@@ -39,6 +40,7 @@ import org.apache.fineract.accounting.journalentry.api.DateParam;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
@@ -93,6 +95,8 @@ public class CentersApiResource {
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final MeetingReadPlatformService meetingReadPlatformService;
     private final EntityDatatableChecksReadService entityDatatableChecksReadService;
+    private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
+
 
     @Autowired
     public CentersApiResource(final PlatformSecurityContext context, final CenterReadPlatformService centerReadPlatformService,
@@ -104,6 +108,8 @@ public class CentersApiResource {
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
             final EntityDatatableChecksReadService entityDatatableChecksReadService) {
+            final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService) {
+
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
         this.centerApiJsonSerializer = centerApiJsonSerializer;
@@ -116,7 +122,7 @@ public class CentersApiResource {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.meetingReadPlatformService = meetingReadPlatformService;
-        this.entityDatatableChecksReadService = entityDatatableChecksReadService;
+        this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
     }
 
     @GET
@@ -334,4 +340,11 @@ public class CentersApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.groupSummaryToApiJsonSerializer.serialize(settings, groupAccount, GROUP_ACCOUNTS_DATA_PARAMETERS);
     }
+    @GET
+   	@Path("bulkimporttemplate")
+   	@Produces("application/vnd.ms-excel")
+   	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
+   	public Response getCentersTemplate(@QueryParam("officeId")final long officeId,@QueryParam("staffId")final long staffId) {
+       	return bulkImportWorkbookPopulatorService.getCentersTemplate("center", officeId,staffId);
+   	}
 }

@@ -29,6 +29,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.fineract.infrastructure.bulkimport.populator.OfficeSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.PersonnelSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.centers.CentersWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.office.OfficeWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
@@ -41,6 +42,7 @@ import org.apache.fineract.organisation.office.service.OfficeReadPlatformService
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.group.api.GroupingTypesApiConstants;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +90,29 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   	populator.populate(workbook);
   	return buildResponse(workbook, entityType);
   }
-
-
+  @Override
+  public Response getCentersTemplate(final String entityType, final Long officeId, final Long staffId){
+	  
+	  WorkbookPopulator populator=null;
+	  final Workbook workbook=new HSSFWorkbook();
+	  if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.CENTER_RESOURCE_NAME)) {
+			populator=populateCenterWorkbook(officeId,staffId);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+	          "Unable to find requested resource");
+		}
+	  	populator.populate(workbook);
+	  	return buildResponse(workbook, entityType);
+  }
+  
+private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
+	 this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+	 this.context.authenticatedUser().validateHasReadPermission("STAFF");
+	 List<OfficeData> offices = fetchOffices(officeId);
+	  List<StaffData> staff = fetchStaff(staffId);
+	return new CentersWorkbookPopulator(new OfficeSheetPopulator(offices),
+	        new PersonnelSheetPopulator(staff, offices));
+}
   private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
 	  this.context.authenticatedUser().validateHasReadPermission("OFFICE");
 	  List<OfficeData> offices = fetchOffices(officeId);
