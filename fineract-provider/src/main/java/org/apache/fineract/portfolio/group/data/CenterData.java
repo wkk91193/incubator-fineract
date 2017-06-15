@@ -205,7 +205,11 @@ public class CenterData {
         return collectionMeetingCalendar;
     }
 
-    public String getStaffName() {
+    public String getOfficeName() {
+		return officeName;
+	}
+
+	public String getStaffName() {
         return this.staffName;
     }
 

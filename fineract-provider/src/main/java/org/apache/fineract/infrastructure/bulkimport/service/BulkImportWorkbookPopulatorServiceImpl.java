@@ -26,11 +26,14 @@ import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.fineract.infrastructure.bulkimport.populator.CenterSheetPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.ClientSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.OfficeSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.PersonnelSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.centers.CentersWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.group.GroupsWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.office.OfficeWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -42,7 +45,11 @@ import org.apache.fineract.organisation.office.service.OfficeReadPlatformService
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.group.api.GroupingTypesApiConstants;
+import org.apache.fineract.portfolio.group.data.CenterData;
+import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,15 +61,21 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   private final PlatformSecurityContext context;
   private final OfficeReadPlatformService officeReadPlatformService;
   private final StaffReadPlatformService staffReadPlatformService;
+  private final ClientReadPlatformService clientReadPlatformService;
+  private final CenterReadPlatformService centerReadPlatformService;
 
-  @Autowired
-  public BulkImportWorkbookPopulatorServiceImpl(final PlatformSecurityContext context,
-      final OfficeReadPlatformService officeReadPlatformService,
-      final StaffReadPlatformService staffReadPlatformService) {
-    this.officeReadPlatformService = officeReadPlatformService;
-    this.staffReadPlatformService = staffReadPlatformService;
-    this.context = context;
-  }
+	@Autowired
+	public BulkImportWorkbookPopulatorServiceImpl(final PlatformSecurityContext context,
+			final OfficeReadPlatformService officeReadPlatformService,
+			final StaffReadPlatformService staffReadPlatformService,
+			final ClientReadPlatformService clientReadPlatformService,
+			final CenterReadPlatformService centerReadPlatformService) {
+		this.officeReadPlatformService = officeReadPlatformService;
+		this.staffReadPlatformService = staffReadPlatformService;
+		this.context = context;
+		this.clientReadPlatformService=clientReadPlatformService;
+		this.centerReadPlatformService=centerReadPlatformService;
+	}
 
   @Override
   public Response getClientsTemplate(final String entityType, final Long officeId, final Long staffId) {
@@ -169,6 +182,55 @@ private WorkbookPopulator populateClientWorkbook(final Long officeId, final Long
     }
     return staff;
   }
+
+  @Override
+	public Response getGroupsTemplate(String entityType, Long officeId, Long staffId,Long centerId, Long clientId){
+		WorkbookPopulator populator = null;
+		final Workbook workbook = new HSSFWorkbook();
+		if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.GROUP_RESOURCE_NAME)) {
+			populator = populateGroupsWorkbook(officeId, staffId,centerId,clientId);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+					"Unable to find requested resource");
+		}
+		populator.populate(workbook);
+		return buildResponse(workbook, entityType);
+	}
+
+	private WorkbookPopulator populateGroupsWorkbook(Long officeId, Long staffId, Long centerId, Long clientId) {
+		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+		this.context.authenticatedUser().validateHasReadPermission("STAFF");
+		this.context.authenticatedUser().validateHasReadPermission("CENTER");
+		this.context.authenticatedUser().validateHasReadPermission("CLIENT");
+		List<OfficeData> offices = fetchOffices(officeId);
+		List<StaffData> staff = fetchStaff(staffId);
+		List<CenterData> centers = fetchCenters(centerId);
+		List<ClientData> clients = fetchClients(clientId);
+		return new GroupsWorkbookPopulator(new OfficeSheetPopulator(offices),
+				new PersonnelSheetPopulator(staff, offices), new CenterSheetPopulator(centers, offices),
+				new ClientSheetPopulator(clients, offices));
+	}
+	private List<CenterData> fetchCenters(Long centerId) {
+		List<CenterData>centers=null;
+		if (centerId==null) {
+			centers=(List<CenterData>) this.centerReadPlatformService.retrieveAll(null, null);
+		} else {
+			centers=new ArrayList<>();
+			centers.add(this.centerReadPlatformService.retrieveOne(centerId));
+		}
+		
+		return centers;
+	}
+	private List<ClientData> fetchClients(Long clientId) {
+		List<ClientData> clients=null;
+		if (clientId==null) {
+			clients=(List<ClientData>) this.clientReadPlatformService.retrieveAllForLookup(null);
+		} else {
+		clients=new ArrayList<>();
+		clients.add(this.clientReadPlatformService.retrieveOne(clientId));
+		}
+		return clients;
+	}
 
 
 }
