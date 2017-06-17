@@ -172,7 +172,7 @@ public class OfficesApiResource {
 	@Path("bulkimporttemplate")
 	@Produces("application/vnd.ms-excel")
 	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public Response getOfficeTemplate(@QueryParam("officeId")final long officeId) {
+	public Response getOfficeTemplate(@QueryParam("officeId")final Long officeId) {
     	return bulkImportWorkbookPopulatorService.getOfficesTemplate("office", officeId);
 	}
     

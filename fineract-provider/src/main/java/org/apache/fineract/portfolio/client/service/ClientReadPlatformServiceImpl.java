@@ -58,6 +58,7 @@ import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.domain.LegalForm;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
 import org.apache.fineract.portfolio.savings.service.SavingsProductReadPlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -806,5 +807,12 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         return ClientData.template(null, null, null, null, narrations, null, null, clientTypeOptions, clientClassificationOptions, 
         		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions,null,null, null);
     }
+
+	@Override
+	public Collection<ClientData> retrieveAllClients() {
+		this.context.authenticatedUser();
+		String sql="select "+this.clientMapper.schema();
+		return this.jdbcTemplate.query(sql,clientMapper,new Object[]{});
+	}
 
 }

@@ -264,4 +264,16 @@ public class GroupGeneralData {
     public void setDatatables(final List<DatatableData> datatables) {
             this.datatables = datatables;
     }
+    
+    public String getOfficeName() {
+		return officeName;
+	}
+
+	public LocalDate getActivationDate() {
+		return activationDate;
+	}
+
+	public Boolean getActive() {
+		return active;
+	}
 }

@@ -317,7 +317,7 @@ public class ClientsApiResource {
 	@Path("bulkimporttemplate")
 	@Produces("application/vnd.ms-excel")
 	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public Response getClientTemplate(@QueryParam("officeId")final long officeId,@QueryParam("staffId")final long staffId) {
+	public Response getClientTemplate(@QueryParam("officeId")final Long officeId,@QueryParam("staffId")final Long staffId) {
     	return bulkImportWorkbookPopulatorService.getClientsTemplate("client", officeId,staffId);
 	}
     

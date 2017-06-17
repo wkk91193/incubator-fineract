@@ -100,4 +100,13 @@ public class ClientSheetPopulator extends AbstractWorkbookPopulator {
 	       	    	officeIndex++;
 			}
 	    }
+	    public List<ClientData> getClients() {
+	        return clientsDataList;
+	    }
+	    public Integer getClientsSize() {
+	    	return clientsDataList.size();
+	    }
+	    public Map<Integer, Integer[]> getOfficeNameToBeginEndIndexesOfClients() {
+	    	return officeNameToBeginEndIndexesOfClients;
+	    }
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.populator;
 
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -34,67 +37,98 @@ import org.apache.poi.ss.usermodel.Workbook;
 
 public abstract class AbstractWorkbookPopulator implements WorkbookPopulator {
 
-  protected void writeInt(int colIndex, Row row, int value) {
-    row.createCell(colIndex).setCellValue(value);
-  }
+	protected void writeInt(int colIndex, Row row, int value) {
+		row.createCell(colIndex).setCellValue(value);
+	}
 
-  protected void writeLong(int colIndex, Row row, long value) {
-    row.createCell(colIndex).setCellValue(value);
-  }
+	protected void writeLong(int colIndex, Row row, long value) {
+		row.createCell(colIndex).setCellValue(value);
+	}
 
-  protected void writeString(int colIndex, Row row, String value) {
-    row.createCell(colIndex).setCellValue(value);
-  }
+	protected void writeString(int colIndex, Row row, String value) {
+		row.createCell(colIndex).setCellValue(value);
+	}
 
-  protected void writeDouble(int colIndex, Row row, double value) {
-    row.createCell(colIndex).setCellValue(value);
-  }
+	protected void writeDouble(int colIndex, Row row, double value) {
+		row.createCell(colIndex).setCellValue(value);
+	}
 
-  protected void writeFormula(int colIndex, Row row, String formula) {
-    row.createCell(colIndex).setCellType(Cell.CELL_TYPE_FORMULA);
-    row.createCell(colIndex).setCellFormula(formula);
-  }
+	protected void writeBigDecimal(int colIndex, Row row, BigDecimal value) {
+		row.createCell(colIndex).setCellValue(value.doubleValue());
+		;
+	}
 
-  protected CellStyle getDateCellStyle(Workbook workbook) {
-    CellStyle dateCellStyle = workbook.createCellStyle();
-    short df = workbook.createDataFormat().getFormat("dd/mm/yy");
-    dateCellStyle.setDataFormat(df);
-    return dateCellStyle;
-  }
+	protected void writeFormula(int colIndex, Row row, String formula) {
+		row.createCell(colIndex).setCellType(Cell.CELL_TYPE_FORMULA);
+		row.createCell(colIndex).setCellFormula(formula);
+	}
 
-  protected void writeDate(int colIndex, Row row, String value, CellStyle dateCellStyle) {
-    try {
-      // To make validation between functions inclusive.
-      Date date = new SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(value);
-      Calendar cal = Calendar.getInstance();
-      cal.setTime(date);
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
-      Date dateWithoutTime = cal.getTime();
-      row.createCell(colIndex).setCellValue(dateWithoutTime);
-      row.getCell(colIndex).setCellStyle(dateCellStyle);
-    } catch (ParseException pe) {
-      throw new IllegalArgumentException("ParseException");
-    }
-  }
+	protected CellStyle getDateCellStyle(Workbook workbook) {
+		CellStyle dateCellStyle = workbook.createCellStyle();
+		short df = workbook.createDataFormat().getFormat("dd/mm/yy");
+		dateCellStyle.setDataFormat(df);
+		return dateCellStyle;
+	}
 
-  protected void setOfficeDateLookupTable(Sheet sheet, List<OfficeData> offices, int officeNameCol,
-      int activationDateCol) {
-    Workbook workbook = sheet.getWorkbook();
-    CellStyle dateCellStyle = workbook.createCellStyle();
-    short df = workbook.createDataFormat().getFormat("dd/mm/yy");
-    dateCellStyle.setDataFormat(df);
-    int rowIndex = 0;
-    for (OfficeData office : offices) {
-      Row row = sheet.createRow(++rowIndex);
-      writeString(officeNameCol, row, office.name().trim().replaceAll("[ )(]", "_"));
-      writeDate(activationDateCol, row,
-          "" + office.getOpeningDate().getDayOfMonth() + "/"
-              + office.getOpeningDate().getMonthOfYear() + "/" + office.getOpeningDate().getYear(),
-          dateCellStyle);
-    }
-  }
+	protected void writeDate(int colIndex, Row row, String value, CellStyle dateCellStyle) {
+		try {
+			// To make validation between functions inclusive.
+			Date date = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).parse(value);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			cal.set(Calendar.HOUR_OF_DAY, 0);
+			cal.set(Calendar.MINUTE, 0);
+			cal.set(Calendar.SECOND, 0);
+			cal.set(Calendar.MILLISECOND, 0);
+			Date dateWithoutTime = cal.getTime();
+			row.createCell(colIndex).setCellValue(dateWithoutTime);
+			row.getCell(colIndex).setCellStyle(dateCellStyle);
+		} catch (ParseException pe) {
+			throw new IllegalArgumentException("ParseException");
+		}
+	}
+
+	protected void setOfficeDateLookupTable(Sheet sheet, List<OfficeData> offices, int officeNameCol,
+			int activationDateCol) {
+		Workbook workbook = sheet.getWorkbook();
+		CellStyle dateCellStyle = workbook.createCellStyle();
+		short df = workbook.createDataFormat().getFormat("dd/mm/yy");
+		dateCellStyle.setDataFormat(df);
+		int rowIndex = 0;
+		for (OfficeData office : offices) {
+			Row row = sheet.createRow(++rowIndex);
+			writeString(officeNameCol, row, office.name().trim().replaceAll("[ )(]", "_"));
+			writeDate(
+					activationDateCol, row, "" + office.getOpeningDate().getDayOfMonth() + "/"
+							+ office.getOpeningDate().getMonthOfYear() + "/" + office.getOpeningDate().getYear(),
+					dateCellStyle);
+		}
+
+	}
+
+	protected void setClientAndGroupDateLookupTable(Sheet sheet, List<ClientData> clients,
+			List<GroupGeneralData> groups, int nameCol, int activationDateCol) {
+		Workbook workbook = sheet.getWorkbook();
+		CellStyle dateCellStyle = workbook.createCellStyle();
+		short df = workbook.createDataFormat().getFormat("dd/mm/yy");
+		dateCellStyle.setDataFormat(df);
+		int rowIndex = 0;
+		for (ClientData client : clients) {
+			Row row = sheet.getRow(++rowIndex);
+			if (row == null)
+				row = sheet.createRow(rowIndex);
+			writeString(nameCol, row, client.getDisplayName().replaceAll("[ )(] ", "_") + "(" + client.getId() + ")");
+			writeDate(activationDateCol, row, client.getActivationDate().toString(), dateCellStyle);
+		}
+		if (groups == null)
+			return;
+		for (GroupGeneralData group : groups) {
+			Row row = sheet.getRow(++rowIndex);
+			if (row == null)
+				row = sheet.createRow(rowIndex);
+			writeString(nameCol, row, group.getName().replaceAll("[ )(] ", "_"));
+			writeDate(activationDateCol, row, group.getActivationDate().toString(), dateCellStyle);
+		}
+	}
 
 }

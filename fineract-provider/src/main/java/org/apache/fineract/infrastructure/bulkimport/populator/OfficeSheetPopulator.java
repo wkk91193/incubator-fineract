@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.populator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.fineract.organisation.office.data.OfficeData;
@@ -68,5 +69,13 @@ public class OfficeSheetPopulator extends AbstractWorkbookPopulator {
   public List<OfficeData> getOffices() {
     return offices;
   }
+  public List<String> getOfficeNames() {
+	 List<String> officeNames=new ArrayList<>();
+	 for (OfficeData office : offices) {
+		 officeNames.add(office.name());
+	}
+	 return officeNames;
+  }
+
 
 }

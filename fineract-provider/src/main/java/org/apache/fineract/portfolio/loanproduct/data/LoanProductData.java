@@ -187,7 +187,7 @@ public class LoanProductData {
     /**
      * Used when returning lookup information about loan product for dropdowns.
      */
-    public static LoanProductData lookup(final Long id, final String name, final Boolean multiDisburseLoan ) {
+    public static LoanProductData lookup(final Long id, final String name) {
         final String shortName = null;
         final String description = null;
         final CurrencyData currency = null;
@@ -241,6 +241,7 @@ public class LoanProductData {
         final LocalDate closeDate = null;
         final String status = null;
         final String externalId = null;
+        final Boolean multiDisburseLoan = null;
         final Integer maxTrancheCount = null;
         final BigDecimal outstandingLoanBalance = null;
         final LoanProductGuaranteeData productGuaranteeData = null;
@@ -1196,4 +1197,27 @@ public class LoanProductData {
     public BigDecimal getInterestRateDifferential() {
         return this.interestRateDifferential;
     }
+    public LocalDate getStartDate() {
+		return startDate;
+	}
+
+	public LocalDate getCloseDate() {
+		return closeDate;
+	}
+
+	public Integer getMinNumberOfRepayments() {
+		return minNumberOfRepayments;
+	}
+
+	public Integer getMaxNumberOfRepayments() {
+		return maxNumberOfRepayments;
+	}
+
+	public BigDecimal getMinInterestRatePerPeriod() {
+		return minInterestRatePerPeriod;
+	}
+
+	public BigDecimal getMaxInterestRatePerPeriod() {
+		return maxInterestRatePerPeriod;
+	}
 }

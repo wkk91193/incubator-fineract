@@ -36,12 +36,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
@@ -104,6 +106,7 @@ public class GroupsApiResource {
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final MeetingReadPlatformService meetingReadPlatformService;
     private final EntityDatatableChecksReadService entityDatatableChecksReadService;
+    private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
 
     @Autowired
     public GroupsApiResource(final PlatformSecurityContext context, final GroupReadPlatformService groupReadPlatformService,
@@ -117,7 +120,8 @@ public class GroupsApiResource {
             final GroupRolesReadPlatformService groupRolesReadPlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
-            final EntityDatatableChecksReadService entityDatatableChecksReadService) {
+            final EntityDatatableChecksReadService entityDatatableChecksReadService,
+            final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService) {
 
         this.context = context;
         this.groupReadPlatformService = groupReadPlatformService;
@@ -135,6 +139,7 @@ public class GroupsApiResource {
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.meetingReadPlatformService = meetingReadPlatformService;
         this.entityDatatableChecksReadService = entityDatatableChecksReadService;
+        this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
     }
 
     @GET
@@ -441,4 +446,12 @@ public class GroupsApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.groupSummaryToApiJsonSerializer.serialize(settings, groupAccount, GROUP_ACCOUNTS_DATA_PARAMETERS);
     }
+    
+    @GET
+   	@Path("bulkimporttemplate")
+   	@Produces("application/vnd.ms-excel")
+   	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
+   	public Response getGroupsTemplate(@QueryParam("officeId")final Long officeId,@QueryParam("staffId")final Long staffId,@QueryParam("centerId")final Long centerId,@QueryParam("clientId")final Long clientId) {
+       	return bulkImportWorkbookPopulatorService.getGroupsTemplate("group", officeId, staffId, centerId, clientId);
+   	}
 }
