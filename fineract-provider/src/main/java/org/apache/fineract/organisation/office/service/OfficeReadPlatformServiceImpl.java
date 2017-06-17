@@ -140,36 +140,37 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         }
     }
 
-    @Override
-    @Cacheable(value = "offices", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy()+'of')")
-    public Collection<OfficeData> retrieveAllOffices(final boolean includeAllOffices, final SearchParameters searchParameters) {
-        final AppUser currentUser = this.context.authenticatedUser();
-        final String hierarchy = currentUser.getOffice().getHierarchy();
-        String hierarchySearchString = null;
-        if (includeAllOffices) {
-            hierarchySearchString = "." + "%";
-        } else {
-            hierarchySearchString = hierarchy + "%";
-        }
-        final OfficeMapper rm = new OfficeMapper();
-        final StringBuilder sqlBuilder = new StringBuilder(200);
-        sqlBuilder.append("select ");
-        sqlBuilder.append(rm.officeSchema());
-        sqlBuilder.append(" where o.hierarchy like ? ");
+	@Override
+	@Cacheable(value = "offices", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy()+'of')")
+	public Collection<OfficeData> retrieveAllOffices(final boolean includeAllOffices,
+			final SearchParameters searchParameters) {
+		final AppUser currentUser = this.context.authenticatedUser();
+		final String hierarchy = currentUser.getOffice().getHierarchy();
+		String hierarchySearchString = null;
+		if (includeAllOffices) {
+			hierarchySearchString = "." + "%";
+		} else {
+			hierarchySearchString = hierarchy + "%";
+		}
+		final OfficeMapper rm = new OfficeMapper();
+		final StringBuilder sqlBuilder = new StringBuilder(200);
+		sqlBuilder.append("select ");
+		sqlBuilder.append(rm.officeSchema());
+		sqlBuilder.append(" where o.hierarchy like ? ");
+		if (searchParameters != null) {
+			if (searchParameters.isOrderByRequested()) {
+				sqlBuilder.append("order by ").append(searchParameters.getOrderBy());
 
-        if (searchParameters.isOrderByRequested()) {
-            sqlBuilder.append("order by ").append(searchParameters.getOrderBy());
-
-            if (searchParameters.isSortOrderProvided()) {
-                sqlBuilder.append(' ').append(searchParameters.getSortOrder());
-            }
-        } else {
-            sqlBuilder.append("order by o.hierarchy");
-        }
-
-        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { hierarchySearchString });
-    }
-
+				if (searchParameters.isSortOrderProvided()) {
+					sqlBuilder.append(' ').append(searchParameters.getSortOrder());
+				}
+			} else {
+				sqlBuilder.append("order by o.hierarchy");
+			}
+		}
+		return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { hierarchySearchString });
+	}
+	
     @Override
     @Cacheable(value = "officesForDropdown", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy()+'ofd')")
     public Collection<OfficeData> retrieveAllOfficesForDropdown() {

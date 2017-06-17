@@ -30,7 +30,6 @@ import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.infrastructure.security.utils.ColumnValidator;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.exception.StaffNotFoundException;
 import org.apache.fineract.portfolio.client.domain.ClientStatus;
@@ -50,14 +49,11 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
     private final PlatformSecurityContext context;
     private final StaffLookupMapper lookupMapper = new StaffLookupMapper();
     private final StaffInOfficeHierarchyMapper staffInOfficeHierarchyMapper = new StaffInOfficeHierarchyMapper();
-    private final ColumnValidator columnValidator;
 
     @Autowired
-    public StaffReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-    		final ColumnValidator columnValidator) {
+    public StaffReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.columnValidator = columnValidator;
     }
 
     private static final class StaffMapper implements RowMapper<StaffData> {
@@ -161,20 +157,20 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
 
     @Override
     public Collection<StaffData> retrieveAllLoanOfficersInOfficeById(final Long officeId) {
-        return retrieveAllStaff(" office_id = ? and is_loan_officer=1 and o.hierarchy like ?", officeId);
+        return retrieveAllStaff(" office_id=" + officeId + " and is_loan_officer=1");
     }
 
     @Override
     public Collection<StaffData> retrieveAllStaffForDropdown(final Long officeId) {
     	
     	//adding the Authorization criteria so that a user cannot see an employee who does not belong to his office or 	a sub office for his office.
-        final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy()+"%";
+        final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy();
 
         final Long defaultOfficeId = defaultToUsersOfficeIfNull(officeId);
 
-        final String sql = "select " + this.lookupMapper.schema() + " where s.office_id = ? and s.is_active=1 and o.hierarchy like ? ";
+        final String sql = "select " + this.lookupMapper.schema() + " where s.office_id = ? and s.is_active=1 and o.hierarchy like '"+ hierarchy+ "%'";
 
-        return this.jdbcTemplate.query(sql, this.lookupMapper, new Object[] { defaultOfficeId, hierarchy });
+        return this.jdbcTemplate.query(sql, this.lookupMapper, new Object[] { defaultOfficeId });
     }
 
     private Long defaultToUsersOfficeIfNull(final Long officeId) {
@@ -189,14 +185,14 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
     public StaffData retrieveStaff(final Long staffId) {
     	
         //adding the Authorization criteria so that a user cannot see an employee who does not belong to his office or 	a sub office for his office.
-        final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy()+ "%";
+        final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy();
          
 
         try {
             final StaffMapper rm = new StaffMapper();
-            final String sql = "select " + rm.schema() + " where s.id = ? and o.hierarchy like ? " ;
+            final String sql = "select " + rm.schema() + " where s.id = ? and o.hierarchy like '"+ hierarchy+ "%'" ;
 
-            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { staffId, hierarchy });
+            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { staffId });
         } catch (final EmptyResultDataAccessException e) {
             throw new StaffNotFoundException(staffId);
         }
@@ -206,61 +202,62 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
     public Collection<StaffData> retrieveAllStaff(final String sqlSearch, final Long officeId, final boolean loanOfficersOnly,
             final String status) {
         final String extraCriteria = getStaffCriteria(sqlSearch, officeId, loanOfficersOnly, status);
-        return retrieveAllStaff(extraCriteria, officeId);
+        return retrieveAllStaff(extraCriteria);
     }
 
-    private Collection<StaffData> retrieveAllStaff(final String extraCriteria, Long officeId) {
-    	
+    private Collection<StaffData> retrieveAllStaff(final String extraCriteria) {
+
         final StaffMapper rm = new StaffMapper();
         String sql = "select " + rm.schema();
-        final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy()+"%";
-        if (StringUtils.isNotBlank(extraCriteria)){
-        	sql += " where " + extraCriteria;        	
+        if (StringUtils.isNotBlank(extraCriteria)) {
+            sql += " where " + extraCriteria;
         }
         sql = sql + " order by s.lastname";
-        if(officeId==null){
-        	return this.jdbcTemplate.query(sql, rm, new Object[] {hierarchy });
-        }        
-        return this.jdbcTemplate.query(sql, rm, new Object[] {officeId, hierarchy });
+        return this.jdbcTemplate.query(sql, rm, new Object[] {});
     }
 
-    private String getStaffCriteria(final String sqlSearch, final Long officeId, final boolean loanOfficersOnly, final String status) {
+	private String getStaffCriteria(final String sqlSearch, final Long officeId, final boolean loanOfficersOnly,
+			final String status) {
 
-        final StringBuffer extraCriteria = new StringBuffer(200);
+		final StringBuffer extraCriteria = new StringBuffer(200);
 
-        if (sqlSearch != null) {
-            extraCriteria.append(" and (").append(sqlSearch).append(")");
-            final StaffMapper rm = new StaffMapper();
-            this.columnValidator.validateSqlInjection(rm.schema(), sqlSearch);
-        }
-        if (officeId != null) {
-            extraCriteria.append(" and s.office_id = ? ");
-        }
-        if (loanOfficersOnly) {
-            extraCriteria.append(" and s.is_loan_officer is true ");
-        }
-        // Passing status parameter to get ACTIVE (By Default), INACTIVE or ALL
-        // (Both active and Inactive) employees
-        if (status.equalsIgnoreCase("active")) {
-            extraCriteria.append(" and s.is_active = 1 ");
-        } else if (status.equalsIgnoreCase("inActive")) {
-            extraCriteria.append(" and s.is_active = 0 ");
-        } else if (status.equalsIgnoreCase("all")) {} else {
-            throw new UnrecognizedQueryParamException("status", status, new Object[] { "all", "active", "inactive" });
-        }
-        
-        //adding the Authorization criteria so that a user cannot see an employee who does not belong to his office or 	a sub office for his office.
-        
-        extraCriteria.append(" and o.hierarchy like ? ");
+		if (sqlSearch != null) {
+			extraCriteria.append(" and (").append(sqlSearch).append(")");
+		}
+		if (officeId != null) {
+			extraCriteria.append(" and office_id = ").append(officeId).append(" ");
+		}
+		if (loanOfficersOnly) {
+			extraCriteria.append(" and s.is_loan_officer is true ");
+		}
+		// Passing status parameter to get ACTIVE (By Default), INACTIVE or ALL
+		// (Both active and Inactive) employees
+		if (status != null) {
+			if (status.equalsIgnoreCase("active")) {
+				extraCriteria.append(" and is_active = 1 ");
+			} else if (status.equalsIgnoreCase("inActive")) {
+				extraCriteria.append(" and is_active = 0 ");
+			} else if (status.equalsIgnoreCase("all")) {
+			} else {
+				throw new UnrecognizedQueryParamException("status", status,
+						new Object[] { "all", "active", "inactive" });
+			}
+		}
 
-        if (StringUtils.isNotBlank(extraCriteria.toString())) {
-            extraCriteria.delete(0, 4);
-        }
-        
-        // remove begin four letter including a space from the string.
-        return extraCriteria.toString();
-    }
+		// adding the Authorization criteria so that a user cannot see an
+		// employee who does not belong to his office or a sub office for his
+		// office.
+		final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy();
+		extraCriteria.append(" and o.hierarchy like '" + hierarchy + "%' ");
 
+		if (StringUtils.isNotBlank(extraCriteria.toString())) {
+			extraCriteria.delete(0, 4);
+		}
+
+		// remove begin four letter including a space from the string.
+		return extraCriteria.toString();
+	}
+	
     @Override
     public Collection<StaffData> retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(final Long officeId, final boolean loanOfficersOnly) {
 
@@ -275,21 +272,15 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
                 
         String sql =  "select c.display_name as client, g.display_name as grp,l.loan_officer_id as loan, s.field_officer_id as sav"+
         			  " from m_staff staff "+
-        			  " left outer join m_client c on staff.id = c.staff_id  AND c.status_enum < ? "+
+        			  " left outer join m_client c on staff.id = c.staff_id  AND c.status_enum < "+ ClientStatus.CLOSED.getValue() +
         			  " left outer join m_group g on staff.id = g.staff_id " +
-                      " left outer join m_loan l on staff.id = l.loan_officer_id and l.loan_status_id < ? " +
-                      " left outer join m_savings_account s on c.staff_id = s.field_officer_id and s.status_enum < ? "+ 
-                      " where  staff.id  = ? "+
+                      " left outer join m_loan l on staff.id = l.loan_officer_id and l.loan_status_id < " +  LoanStatus.WITHDRAWN_BY_CLIENT.getValue() +
+                      " left outer join m_savings_account s on c.staff_id = s.field_officer_id and s.status_enum < "+ SavingsAccountStatusType.WITHDRAWN_BY_APPLICANT.getValue() +
+                      " where  staff.id  =  " + staffId +
                       " group by staff.id";
         
        
-		List<Map<String, Object>> result = this.jdbcTemplate.queryForList(
-				sql,
-				new Object[] {
-						ClientStatus.CLOSED.getValue(),
-						LoanStatus.WITHDRAWN_BY_CLIENT.getValue(),
-						SavingsAccountStatusType.WITHDRAWN_BY_APPLICANT
-								.getValue(), staffId });
+        List<Map<String, Object>> result =  this.jdbcTemplate.queryForList(sql);
         if (result != null) {
        		for (Map<String, Object> map : result) {
        			if (map.get("client") != null) {
