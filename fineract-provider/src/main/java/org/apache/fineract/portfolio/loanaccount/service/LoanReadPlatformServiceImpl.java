@@ -2062,6 +2062,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
     }
 
+
     @Override
     public Collection<Long> retrieveLoanIdsWithPendingIncomePostingTransactions() {
         StringBuilder sqlBuilder = new StringBuilder()
@@ -2187,5 +2188,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
 
     }
-    
+
+	@Override
+	public Collection<LoanAccountData> retrieveAllLoans() {
+		this.context.authenticatedUser();
+		String sql="select "+loaanLoanMapper.loanSchema();
+		return this.jdbcTemplate.query(sql,loaanLoanMapper,new Object[]{});
+	}
+
 }

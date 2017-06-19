@@ -758,12 +758,12 @@ public class LoansApiResource {
         return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
     
-    @GET
+	@GET
 	@Path("bulkimporttemplate")
 	@Produces("application/vnd.ms-excel")
 	// @Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public Response getLoansTemplate(@QueryParam("officeId") final Long officeId,
-			@QueryParam("staffId") final Long staffId,
+			@QueryParam("staffId") final Long staffId, @QueryParam("centerId") final Long centerId,
 			@QueryParam("clientId") final Long clientId, @QueryParam("groupId") final Long groupId,
 			@QueryParam("productId") final Long productId, @QueryParam("fundId") final Long fundId,
 			@QueryParam("paymentTypeId") final Long paymentTypeId, @QueryParam("code") final String code) {
@@ -780,4 +780,5 @@ public class LoansApiResource {
 			@QueryParam("paymentTypeId") final Long paymentTypeId, @QueryParam("code") final String code) {
 		return bulkImportWorkbookPopulatorService.getLoanRepaymentTemplate("loanrepayment", officeId, clientId, fundId, paymentTypeId, code);
 	}
+
 }

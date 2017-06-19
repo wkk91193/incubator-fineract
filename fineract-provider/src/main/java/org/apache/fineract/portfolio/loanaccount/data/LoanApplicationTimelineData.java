@@ -148,6 +148,7 @@ public class LoanApplicationTimelineData {
         return new RepaymentScheduleRelatedLoanData(this.expectedDisbursementDate, this.actualDisbursementDate, currency, principal,
                  inArrearsTolerance, totalFeeChargesAtDisbursement);
     }
+
     
     public LocalDate getDisbursementDate(){
         LocalDate disbursementDate = this.expectedDisbursementDate;
@@ -156,4 +157,11 @@ public class LoanApplicationTimelineData {
         }
         return disbursementDate;
     }
+
+
+   	public LocalDate getActualDisbursementDate() {
+		return actualDisbursementDate;
+	}
+    
+
 }
