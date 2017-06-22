@@ -276,4 +276,5 @@ public class GroupGeneralData {
 	public Boolean getActive() {
 		return active;
 	}
+
 }

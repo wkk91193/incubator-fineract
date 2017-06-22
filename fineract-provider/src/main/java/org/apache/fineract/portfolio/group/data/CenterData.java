@@ -216,4 +216,9 @@ public class CenterData {
     public void setDatatables(final List<DatatableData> datatables) {
         this.datatables = datatables;
     }
+
+	public boolean isActive() {
+		return active;
+	}
+	
 }

@@ -30,19 +30,20 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 
 public class CenterSheetPopulator extends AbstractWorkbookPopulator {
-	private List<CenterData> centers;
+	private List<CenterData> allCenters;
+	// private List<CenterData> activeCenters;
 	private List<OfficeData> offices;
-	
+
 	private Map<String, ArrayList<String>> officeToCenters;
 	private Map<Integer, Integer[]> officeNameToBeginEndIndexesOfCenters;
-	
-	
+	private Map<String, Long> centerNameToCenterId;
+
 	private static final int OFFICE_NAME_COL = 0;
 	private static final int CENTER_NAME_COL = 1;
 	private static final int CENTER_ID_COL = 2;
-	
+
 	public CenterSheetPopulator(List<CenterData> centers, List<OfficeData> offices) {
-		this.centers = centers;
+		this.allCenters = centers;
 		this.offices = offices;
 	}
 
@@ -50,11 +51,32 @@ public class CenterSheetPopulator extends AbstractWorkbookPopulator {
 	public void populate(Workbook workbook) {
 		Sheet centerSheet = workbook.createSheet("Center");
 		setLayout(centerSheet);
+		// filterActiveCenters();
+		// System.out.println("Active centers size : " + activeCenters.size());
 		setOfficeToCentersMap();
+		centerNameToCenterIdMap();
 		populateCentersByOfficeName(centerSheet);
 		centerSheet.protectSheet("");
 	}
-	
+
+	// private void filterActiveCenters() {
+	// activeCenters = new ArrayList<>();
+	// centerNameToCenterId = new HashMap<String, Long>();
+	// for (CenterData centerData : allCenters) {
+	// if (centerData.isActive()) {
+	// activeCenters.add(centerData);
+	// centerNameToCenterId.put(centerData.getName(), centerData.getId());
+	// }
+	// }
+	// }
+	private void centerNameToCenterIdMap() {
+		centerNameToCenterId = new HashMap<String, Long>();
+		for (CenterData centerData : allCenters) {
+
+			centerNameToCenterId.put(centerData.getName(), centerData.getId());
+		}
+	}
+
 	private void populateCentersByOfficeName(Sheet centerSheet) {
 		int rowIndex = 1, officeIndex = 0, startIndex = 1;
 		officeNameToBeginEndIndexesOfCenters = new HashMap<Integer, Integer[]>();
@@ -70,13 +92,12 @@ public class CenterSheetPopulator extends AbstractWorkbookPopulator {
 			if (!centersList.isEmpty()) {
 				for (String centerName : centersList) {
 					writeString(CENTER_NAME_COL, row, centerName);
+					writeLong(CENTER_ID_COL, row, centerNameToCenterId.get(centerName));
 					row = centerSheet.createRow(++rowIndex);
 				}
-				officeNameToBeginEndIndexesOfCenters.put(officeIndex++,
-						new Integer[] { startIndex, rowIndex });
+				officeNameToBeginEndIndexesOfCenters.put(officeIndex++, new Integer[] { startIndex, rowIndex });
 			} else {
-				officeNameToBeginEndIndexesOfCenters.put(officeIndex++,
-						new Integer[] { startIndex, rowIndex + 1 });
+				officeNameToBeginEndIndexesOfCenters.put(officeIndex++, new Integer[] { startIndex, rowIndex + 1 });
 			}
 		}
 	}
@@ -90,23 +111,23 @@ public class CenterSheetPopulator extends AbstractWorkbookPopulator {
 		writeString(CENTER_NAME_COL, rowHeader, "Center Names");
 		writeString(CENTER_ID_COL, rowHeader, "Center ID");
 	}
+
 	private void setOfficeToCentersMap() {
 		officeToCenters = new HashMap<String, ArrayList<String>>();
-		for (CenterData center : centers) {
-			add(center.getOfficeName().trim().replaceAll("[ )(]", "_"), center
-					.getName().trim());
+		// for(CenterData center :activeCenters){
+		for (CenterData center : allCenters) {
+			add(center.getOfficeName().trim().replaceAll("[ )(]", "_"), center.getName().trim());
 		}
 	}
+
 	// Guava Multi-map can reduce this.
-		private void add(String key, String value) {
-				ArrayList<String> values = officeToCenters.get(key);
-				if (values == null) {
-					values = new ArrayList<String>();
-				}
-				values.add(value);
-				officeToCenters.put(key, values);
-		}	
-	
-	
- 
+	private void add(String key, String value) {
+		ArrayList<String> values = officeToCenters.get(key);
+		if (values == null) {
+			values = new ArrayList<String>();
+		}
+		values.add(value);
+		officeToCenters.put(key, values);
+	}
+
 }

@@ -29,31 +29,57 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 
-
-
 public class GroupSheetPopulator extends AbstractWorkbookPopulator {
-	private List<GroupGeneralData> groups;
-	private List<OfficeData> offices;
-	
+	private List<GroupGeneralData> allGroups;
+	private List<OfficeData> allOffices;
+	// private List<GroupGeneralData> activeGroups;
+
 	private Map<String, ArrayList<String>> officeToGroups;
 	private Map<Integer, Integer[]> officeNameToBeginEndIndexesOfGroups;
+	private Map<String, Long> groupNameToGroupId;
 
 	private static final int OFFICE_NAME_COL = 0;
 	private static final int GROUP_NAME_COL = 1;
 	private static final int GROUP_ID_COL = 2;
 
 	public GroupSheetPopulator(final List<GroupGeneralData> groups, final List<OfficeData> offices) {
-		this.groups = groups;
-		this.offices = offices;
+		this.allGroups = groups;
+		this.allOffices = offices;
 	}
 
 	@Override
 	public void populate(Workbook workbook) {
 		Sheet groupSheet = workbook.createSheet("Groups");
 		setLayout(groupSheet);
+		// filterActiveGroups();
+		// System.out.println("Active groups size : " + activeGroups.size());
 		setOfficeToGroupsMap();
+		setGroupNametoGroupIdMap();
 		populateGroupsByOfficeName(groupSheet);
 		groupSheet.protectSheet("");
+	}
+
+	// private void filterActiveGroups() {
+	// activeGroups = new ArrayList<>();
+	// groupNameToGroupId = new HashMap<String, Long>();
+	// for (GroupGeneralData groupGeneralData : allGroups) {
+	// if (groupGeneralData.getActive() != null) {
+	// if (groupGeneralData.getActive()) {
+	// activeGroups.add(groupGeneralData);
+	// groupNameToGroupId.put(groupGeneralData.getName().trim(),
+	// groupGeneralData.getId());
+	// }
+	// }
+	//
+	// }
+	//
+	// }
+	private void setGroupNametoGroupIdMap() {
+		groupNameToGroupId = new HashMap<String, Long>();
+		for (GroupGeneralData groupGeneralData : allGroups) {
+			groupNameToGroupId.put(groupGeneralData.getName().trim(), groupGeneralData.getId());
+		}
+
 	}
 
 	private void setLayout(Sheet worksheet) {
@@ -68,51 +94,58 @@ public class GroupSheetPopulator extends AbstractWorkbookPopulator {
 
 	private void setOfficeToGroupsMap() {
 		officeToGroups = new HashMap<String, ArrayList<String>>();
-		for (GroupGeneralData group : groups) {
+		// for(GroupGeneralData group :activeGroups){
+		for (GroupGeneralData group : allGroups) {
 			add(group.getOfficeName().trim().replaceAll("[ )(]", "_"), group.getName().trim());
 		}
 	}
-	//Guava Multi-map can reduce this.
-    private void add(String key, String value) {
-        ArrayList<String> values = officeToGroups.get(key);
-        if (values == null) {
-            values = new ArrayList<String>();
-        }
-        values.add(value);
-        officeToGroups.put(key, values);
-    }
-    private void populateGroupsByOfficeName(Sheet groupSheet) {
-    	int rowIndex = 1, officeIndex = 0, startIndex = 1;
-    	officeNameToBeginEndIndexesOfGroups = new HashMap<Integer, Integer[]>();
-    	Row row = groupSheet.createRow(rowIndex);
-		for(OfficeData office : offices) {
-			startIndex = rowIndex+1;
-       	    writeString(OFFICE_NAME_COL, row, office.name());
-       	    ArrayList<String> groupsList = new ArrayList<String>();
-       	    
-       	    if(officeToGroups.containsKey(office.name()))
-       	    	groupsList = officeToGroups.get(office.name());
-       	    
-       	 if(!groupsList.isEmpty()) {
-     		   for(String groupName : groupsList) {
-     		       writeString(GROUP_NAME_COL, row, groupName);
-     		       //writeInt(GROUP_ID_COL, row, groupNameToGroupId.get(groupName));
-     		       row = groupSheet.createRow(++rowIndex);
-     		   }
-     		  officeNameToBeginEndIndexesOfGroups.put(officeIndex++, new Integer[]{startIndex, rowIndex});
-     	    }
-     	    else {
-     	    	officeNameToBeginEndIndexesOfGroups.put(officeIndex++, new Integer[]{startIndex, rowIndex+1});
-     	    }
+
+	// Guava Multi-map can reduce this.
+	private void add(String key, String value) {
+		ArrayList<String> values = officeToGroups.get(key);
+		if (values == null) {
+			values = new ArrayList<String>();
 		}
-    }
-    public List<GroupGeneralData> getGroups() {
-    	return groups;
-    }
-    public Integer getGroupsSize() {
-    	return groups.size();
-    }
-    public Map<Integer, Integer[]> getOfficeNameToBeginEndIndexesOfGroups() {
-    	return officeNameToBeginEndIndexesOfGroups;
-    }
+		values.add(value);
+		officeToGroups.put(key, values);
+	}
+
+	private void populateGroupsByOfficeName(Sheet groupSheet) {
+		int rowIndex = 1, officeIndex = 0, startIndex = 1;
+		officeNameToBeginEndIndexesOfGroups = new HashMap<Integer, Integer[]>();
+		Row row = groupSheet.createRow(rowIndex);
+		for (OfficeData office : allOffices) {
+			startIndex = rowIndex + 1;
+			writeString(OFFICE_NAME_COL, row, office.name());
+			ArrayList<String> groupsList = new ArrayList<String>();
+
+			if (officeToGroups.containsKey(office.name()))
+				groupsList = officeToGroups.get(office.name());
+
+			if (!groupsList.isEmpty()) {
+				for (String groupName : groupsList) {
+					writeString(GROUP_NAME_COL, row, groupName);
+					writeLong(GROUP_ID_COL, row, groupNameToGroupId.get(groupName));
+					row = groupSheet.createRow(++rowIndex);
+				}
+				officeNameToBeginEndIndexesOfGroups.put(officeIndex++, new Integer[] { startIndex, rowIndex });
+			} else {
+				officeNameToBeginEndIndexesOfGroups.put(officeIndex++, new Integer[] { startIndex, rowIndex + 1 });
+			}
+		}
+	}
+
+	public List<GroupGeneralData> getGroups() {
+		return allGroups;
+		// return activeGroups;
+	}
+
+	public Integer getGroupsSize() {
+		return allGroups.size();
+		// return activeGroups.size();
+	}
+
+	public Map<Integer, Integer[]> getOfficeNameToBeginEndIndexesOfGroups() {
+		return officeNameToBeginEndIndexesOfGroups;
+	}
 }

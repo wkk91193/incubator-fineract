@@ -33,8 +33,10 @@ import org.apache.poi.ss.usermodel.Workbook;
 
 public class PersonnelSheetPopulator extends AbstractWorkbookPopulator {
 
-	private List<StaffData> personnel;
-	private List<OfficeData> offices;
+	private List<StaffData> allPersonnel;
+	private List<OfficeData> allOffices;
+	//private final Boolean onlyLoanOfficers;
+	//private List<StaffData> filteredpersonnels;
 
 	// Maintaining the one to many relationship
 	private Map<String, List<StaffData>> officeToPersonnel;
@@ -50,16 +52,19 @@ public class PersonnelSheetPopulator extends AbstractWorkbookPopulator {
 	private static final int STAFF_NAME_COL = 1;
 	private static final int STAFF_ID_COL = 2;
 
-	public PersonnelSheetPopulator(List<StaffData> personnel, List<OfficeData> offices) {
-		this.personnel = personnel;
-		this.offices = offices;
+	public PersonnelSheetPopulator(/*final Boolean onlyLoanOfficers,*/ List<StaffData> personnel,
+			List<OfficeData> offices) {
+		//this.onlyLoanOfficers = onlyLoanOfficers;
+		this.allPersonnel = personnel;
+		this.allOffices = offices;
 	}
 
 	@Override
 	public void populate(Workbook workbook) {
 		Sheet staffSheet = workbook.createSheet("Staff");
 		setLayout(staffSheet);
-
+		//filterPersonals();
+		//System.out.println("Filtered Staff size : " + filteredpersonnels.size());
 		/*
 		 * This piece of code could have been avoided by making multiple trips
 		 * to the database for the staff of each office but this is more
@@ -71,16 +76,27 @@ public class PersonnelSheetPopulator extends AbstractWorkbookPopulator {
 		staffSheet.protectSheet("");
 	}
 
+//	private void filterPersonals() {
+//		filteredpersonnels = new ArrayList<>();
+//		for (StaffData staffData : allPersonnel) {
+//			if (!onlyLoanOfficers) {
+//				filteredpersonnels.add(staffData);
+//			} else if (staffData.getIsLoanOfficer()) {
+//				filteredpersonnels.add(staffData);
+//			}
+//		}
+//	}
+
 	private void populateStaffByOfficeName(Sheet staffSheet) {
 		int rowIndex = 1, startIndex = 1, officeIndex = 0;
 		officeNameToBeginEndIndexesOfStaff = new HashMap<Integer, Integer[]>();
 		Row row = staffSheet.createRow(rowIndex);
-		for (OfficeData office : offices) {
+		for (OfficeData office : allOffices) {
 			startIndex = rowIndex + 1;
 			writeString(OFFICE_NAME_COL, row, office.name().trim().replaceAll("[ )(]", "_"));
 
 			List<StaffData> staffList = officeToPersonnel.get(office.name().trim().replaceAll("[ )(]", "_"));
-			//System.out.println("staffList object : " + staffList);
+			// System.out.println("staffList object : " + staffList);
 			if (staffList != null) {
 				if (!staffList.isEmpty()) {
 					for (StaffData staff : staffList) {
@@ -98,8 +114,10 @@ public class PersonnelSheetPopulator extends AbstractWorkbookPopulator {
 
 	private void setOfficeToPersonnelMap() {
 		officeToPersonnel = new HashMap<String, List<StaffData>>();
-		for (StaffData person : personnel) {
-			System.out.println("Person officeName: " + person.getOfficeName());
+		//for (StaffData person : filteredpersonnels) {
+		for (StaffData person : allPersonnel) {
+			// System.out.println("Person officeName: " +
+			// person.getOfficeName());
 			add(person.getOfficeName().trim().replaceAll("[ )(]", "_"), person);
 		}
 	}

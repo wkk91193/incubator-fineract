@@ -527,4 +527,9 @@ final public class ClientData implements Comparable<ClientData> {
 		return id;
 
 	}
+
+	public Boolean getActive() {
+		return active;
+	}
+	
 }

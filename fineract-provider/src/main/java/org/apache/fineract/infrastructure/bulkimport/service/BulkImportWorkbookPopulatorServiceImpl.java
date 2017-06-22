@@ -167,7 +167,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 		List<OfficeData> offices = fetchOffices(officeId);
 		List<StaffData> staff = fetchStaff(staffId);
 		return new CentersWorkbookPopulator(new OfficeSheetPopulator(offices),
-				new PersonnelSheetPopulator(staff, offices));
+				new PersonnelSheetPopulator(/*Boolean.FALSE,*/staff, offices));
 	}
 
 	private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
@@ -183,7 +183,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 		List<StaffData> staff = fetchStaff(staffId);
 
 		return new ClientWorkbookPopulator(new OfficeSheetPopulator(offices),
-				new PersonnelSheetPopulator(staff, offices));
+				new PersonnelSheetPopulator(/*Boolean.FALSE,*/staff, offices));
 	}
 
 	private Response buildResponse(final Workbook workbook, final String entity) {
@@ -248,7 +248,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 		List<CenterData> centers = fetchCenters(centerId);
 		List<ClientData> clients = fetchClients(clientId);
 		return new GroupsWorkbookPopulator(new OfficeSheetPopulator(offices),
-				new PersonnelSheetPopulator(staff, offices), new CenterSheetPopulator(centers, offices),
+				new PersonnelSheetPopulator(/*Boolean.FALSE,*/staff, offices), new CenterSheetPopulator(centers, offices),
 				new ClientSheetPopulator(clients, offices));
 	}
 
@@ -310,7 +310,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 		List<PaymentTypeData> paymentTypes = fetchPaymentTypes(paymentTypeId);
 		List<CurrencyData> currencies = fetchCurrencies(code);
 		return new LoanWorkbookPopulator(new OfficeSheetPopulator(offices), new ClientSheetPopulator(clients, offices),
-				new GroupSheetPopulator(groups, offices), new PersonnelSheetPopulator(staff, offices),
+				new GroupSheetPopulator(groups, offices), new PersonnelSheetPopulator(/*Boolean.TRUE,*/staff, offices),
 				new LoanProductSheetPopulator(loanproducts), new ExtrasSheetPopulator(funds, paymentTypes, currencies));
 	}
 

@@ -103,4 +103,9 @@ public class StaffData {
     public Long getOfficeId() {
         return this.officeId;
     }
+
+	public Boolean getIsLoanOfficer() {
+		return isLoanOfficer;
+	}
+    
 }
