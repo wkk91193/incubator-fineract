@@ -59,5 +59,7 @@ public interface SavingsAccountReadPlatformService {
 
     List<Long> retrieveSavingsIdsPendingEscheat(LocalDate tenantLocalDate);
     boolean isAccountBelongsToClient(final Long clientId, final Long accountId, final DepositAccountType depositAccountType, final String currencyCode) ;
-    
+
+    Collection<SavingsAccountData>retrieveAllSavingsAccounts();
+
 }

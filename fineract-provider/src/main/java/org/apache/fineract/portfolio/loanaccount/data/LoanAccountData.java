@@ -1622,9 +1622,7 @@ public class LoanAccountData {
     public void setDatatables(final List<DatatableData> datatables) {
             this.datatables = datatables;
     }
-
-
-	public String getAccountNo() {
+    public String getAccountNo() {
 		return accountNo;
 	}
 
@@ -1647,6 +1645,14 @@ public class LoanAccountData {
 	public LoanApplicationTimelineData getTimeline() {
 		return timeline;
 	}
-    
-}
 
+	public static final Comparator<LoanAccountData> ClientNameComparator = new Comparator<LoanAccountData>() {
+
+		@Override
+		public int compare(LoanAccountData loan1, LoanAccountData loan2) {
+			String clientOfLoan1 = loan1.getClientName().toUpperCase(Locale.ENGLISH);
+			String clientOfLoan2 = loan2.getClientName().toUpperCase(Locale.ENGLISH);
+			return clientOfLoan1.compareTo(clientOfLoan2);
+		}
+	};
+}

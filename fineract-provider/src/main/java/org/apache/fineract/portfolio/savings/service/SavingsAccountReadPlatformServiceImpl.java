@@ -1195,6 +1195,13 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             throw new SavingsAccountNotFoundException(accountId);
         }
     }
+	public Collection<SavingsAccountData> retrieveAllSavingsAccounts() {
+		this.context.authenticatedUser();
+		String sql="select "+savingAccountMapper.schemaSql;
+		return this.jdbcTemplate.query(sql,savingAccountMapper,new Object[]{});
+	}
+
+
     /*
      * private static final class SavingsAccountAnnualFeeMapper implements
      * RowMapper<SavingsAccountAnnualFeeData> {

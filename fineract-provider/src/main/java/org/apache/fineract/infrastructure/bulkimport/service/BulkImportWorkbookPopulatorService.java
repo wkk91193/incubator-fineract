@@ -29,4 +29,7 @@ public interface BulkImportWorkbookPopulatorService {
   public Response getLoanTemplate(final String entityType,final Long officeId,final Long staffId,final Long clientId,final Long groupId,
 		   final Long productId,final Long fundId,final Long paymentTypeId,final String code);
   public Response getLoanRepaymentTemplate(final String entityType,final Long officeId,final Long clientId,final Long fundId,final Long paymentTypeId,final String code);
+  public Response getJournalEntriesTemplate(final String entityType,final Long officeId,final Long glAccountId,final Long fundId,final Long paymentTypeId,final String code);
+  public Response getGuarantorTemplate(final String entityType, final Long officeId, final Long clientId);
+
 }

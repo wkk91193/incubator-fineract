@@ -66,5 +66,6 @@ public class GuarantorConstants {
     public static final String GUARANTOR_MANDATORY_GUARANTEE_ERROR = "mandated.guarantee.required";
     public static final String GUARANTOR_INSUFFICIENT_BALANCE_ERROR = "insufficient.balance";
     public static final String GUARANTOR_NOT_ACTIVE_ERROR = "not.active";
+    public static final String GUARANTOR_RESOURCE_NAME="guarantor";
     
 }
