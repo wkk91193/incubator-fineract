@@ -758,7 +758,6 @@ public class LoansApiResource {
         return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
     
-	@GET
 	@Path("bulkimporttemplate")
 	@Produces("application/vnd.ms-excel")
 	// @Produces(MediaType.APPLICATION_OCTET_STREAM)

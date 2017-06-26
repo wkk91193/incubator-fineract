@@ -496,9 +496,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
             final Long id = rs.getLong("id");
             final String name = rs.getString("name");
-            final Boolean multiDisburseLoan = rs.getBoolean("multiDisburseLoan");
 
-            return LoanProductData.lookup(id, name, multiDisburseLoan);
+            return LoanProductData.lookup(id, name);
         }
     }
 

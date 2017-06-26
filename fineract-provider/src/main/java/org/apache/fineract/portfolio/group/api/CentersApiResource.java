@@ -107,7 +107,7 @@ public class CentersApiResource {
             final CollectionSheetReadPlatformService collectionSheetReadPlatformService, final FromJsonHelper fromJsonHelper,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
-            final EntityDatatableChecksReadService entityDatatableChecksReadService) {
+            final EntityDatatableChecksReadService entityDatatableChecksReadService,
             final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService) {
 
         this.context = context;
@@ -123,6 +123,7 @@ public class CentersApiResource {
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.meetingReadPlatformService = meetingReadPlatformService;
         this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
+        this.entityDatatableChecksReadService=entityDatatableChecksReadService;
     }
 
     @GET
