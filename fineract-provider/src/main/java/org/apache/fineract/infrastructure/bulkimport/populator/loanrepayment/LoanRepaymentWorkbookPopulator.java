@@ -27,7 +27,7 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 	private ClientSheetPopulator clientSheetPopulator;
 	private ExtrasSheetPopulator extrasSheetPopulator;
 	private List<LoanAccountData> allloans;
-	private List<LoanAccountData> activeLoans;
+	//private List<LoanAccountData> activeLoans;
 	private static final int OFFICE_NAME_COL = 0;
 	private static final int CLIENT_NAME_COL = 1;
 	private static final int LOAN_ACCOUNT_NO_COL = 2;
@@ -62,7 +62,7 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 		officeSheetPopulator.populate(workbook);
 		clientSheetPopulator.populate(workbook);
 		extrasSheetPopulator.populate(workbook);
-		filterActiveLoans(allloans);
+		//filterActiveLoans(allloans);
 		populateLoansTable(loanRepaymentSheet);
 		setRules(loanRepaymentSheet);
 		setDefaults(loanRepaymentSheet);
@@ -75,12 +75,12 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 				if (row == null)
 					row = worksheet.createRow(rowNo);
 				writeFormula(PRODUCT_COL, row,
-						"IF(ISERROR(VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (activeLoans.size() + 1)
-								+ ",2,FALSE)),\"\",VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (activeLoans.size() + 1)
+						"IF(ISERROR(VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (allloans.size() + 1)
+								+ ",2,FALSE)),\"\",VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (allloans.size() + 1)
 								+ ",2,FALSE))");
 				writeFormula(PRINCIPAL_COL, row,
-						"IF(ISERROR(VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (activeLoans.size() + 1)
-								+ ",3,FALSE)),\"\",VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (activeLoans.size() + 1)
+						"IF(ISERROR(VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (allloans.size() + 1)
+								+ ",3,FALSE)),\"\",VLOOKUP($C" + (rowNo + 1) + ",$P$2:$R$" + (allloans.size() + 1)
 								+ ",3,FALSE))");
 			}
 		} catch (Exception e) {
@@ -112,7 +112,7 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 		DataValidationConstraint paymentTypeConstraint = validationHelper.createFormulaListConstraint("PaymentTypes");
 		DataValidationConstraint repaymentDateConstraint = validationHelper.createDateConstraint(
 				DataValidationConstraint.OperatorType.BETWEEN,
-				"=VLOOKUP($C1,$P$2:$S$" + (activeLoans.size() + 1) + ",4,FALSE)", "=TODAY()", "dd/mm/yy");
+				"=VLOOKUP($C1,$P$2:$S$" + (allloans.size() + 1) + ",4,FALSE)", "=TODAY()", "dd/mm/yy");
 
 		DataValidation officeValidation = validationHelper.createValidation(officeNameConstraint, officeNameRange);
 		DataValidation clientValidation = validationHelper.createValidation(clientNameConstraint, clientNameRange);
@@ -131,14 +131,14 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 
 	}
 
-	private void filterActiveLoans(List<LoanAccountData> allloans) {
-		activeLoans = new ArrayList<>();
-		for (LoanAccountData loanAccountData : allloans) {
-			if (loanAccountData.isActive()) {
-				activeLoans.add(loanAccountData);
-			}
-		}
-	}
+//	private void filterActiveLoans(List<LoanAccountData> allloans) {
+//		activeLoans = new ArrayList<>();
+//		for (LoanAccountData loanAccountData : allloans) {
+//			if (loanAccountData.isActive()) {
+//				activeLoans.add(loanAccountData);
+//			}
+//		}
+//	}
 
 	private void setNames(Sheet worksheet) {
 		ArrayList<String> officeNames = new ArrayList<String>(officeSheetPopulator.getOfficeNames());
@@ -168,17 +168,17 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 		int startIndex = 1, endIndex = 1;
 		String clientName = "";
 		String clientId = "";
-		for (int i = 0; i < activeLoans.size(); i++) {
-			if (!clientName.equals(activeLoans.get(i).getClientName())) {
+		for (int i = 0; i < allloans.size(); i++) {
+			if (!clientName.equals(allloans.get(i).getClientName())) {
 				endIndex = i + 1;
 				clientNameToBeginEndIndexes.put(clientName, new Integer[] { startIndex, endIndex });
 				startIndex = i + 2;
-				clientName = activeLoans.get(i).getClientName();
-				clientId = activeLoans.get(i).getClientId().toString();
+				clientName = allloans.get(i).getClientName();
+				clientId = allloans.get(i).getClientId().toString();
 				clientsWithActiveLoans.add(clientName);
 				clientIdsWithActiveLoans.add(clientId);
 			}
-			if (i == activeLoans.size() - 1) {
+			if (i == allloans.size() - 1) {
 				endIndex = i + 2;
 				clientNameToBeginEndIndexes.put(clientName, new Integer[] { startIndex, endIndex });
 			}
@@ -207,7 +207,7 @@ public class LoanRepaymentWorkbookPopulator extends AbstractWorkbookPopulator {
 		CellStyle dateCellStyle = workbook.createCellStyle();
 		short df = workbook.createDataFormat().getFormat("dd/mm/yy");
 		dateCellStyle.setDataFormat(df);
-		for (LoanAccountData loan : activeLoans) {
+		for (LoanAccountData loan : allloans) {
 			row = loanRepaymentSheet.createRow(rowIndex++);
 			writeString(LOOKUP_CLIENT_NAME_COL, row, loan.getClientName() + "(" + loan.getClientId() + ")");
 			writeLong(LOOKUP_ACCOUNT_NO_COL, row, Long.parseLong(loan.getAccountNo()));

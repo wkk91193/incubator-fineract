@@ -53,6 +53,7 @@ public class OfficeSheetPopulator extends AbstractWorkbookPopulator {
       Row row = officeSheet.createRow(rowIndex);
       writeLong(ID_COL, row, office.getId());
       writeString(OFFICE_NAME_COL, row, office.name().trim().replaceAll("[ )(]", "_"));
+     // System.out.println("Office name : " +office.name().trim().replaceAll("[ )(]", "_"));
       rowIndex++;
     }
   }
@@ -72,7 +73,7 @@ public class OfficeSheetPopulator extends AbstractWorkbookPopulator {
   public List<String> getOfficeNames() {
 	 List<String> officeNames=new ArrayList<>();
 	 for (OfficeData office : offices) {
-		 officeNames.add(office.name());
+		 officeNames.add(office.name().trim().replaceAll("[ )(]", "_"));
 	}
 	 return officeNames;
   }

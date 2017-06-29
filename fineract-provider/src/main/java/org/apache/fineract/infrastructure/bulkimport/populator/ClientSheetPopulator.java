@@ -98,6 +98,7 @@ public class ClientSheetPopulator extends AbstractWorkbookPopulator {
 		officeToClients = new HashMap<String, ArrayList<String>>();
 		// for (ClientData person : activeClients){
 		for (ClientData person : allClients) {
+			//System.out.println("Office to Client Name :"+person.getOfficeName()+" "+person.getDisplayName());
 			add(person.getOfficeName().trim().replaceAll("[ )(]", "_"),
 					person.getDisplayName().trim() + "(" + person.getId() + ")");
 		}
@@ -119,14 +120,17 @@ public class ClientSheetPopulator extends AbstractWorkbookPopulator {
 		Row row = clientSheet.createRow(rowIndex);
 		for (OfficeData office : officesDataList) {
 			startIndex = rowIndex + 1;
+			//System.out.println("Office name from officelist :"+office.name());
 			writeString(OFFICE_NAME_COL, row, office.name());
 			ArrayList<String> clientList = new ArrayList<String>();
-			if (officeToClients.containsKey(office.name()))
-				clientList = officeToClients.get(office.name());
+			if (officeToClients.containsKey(office.name().trim().replaceAll("[ )(]", "_")))
+				clientList = officeToClients.get(office.name().trim().replaceAll("[ )(]", "_"));
 
 			if (!clientList.isEmpty()) {
 				for (String clientName : clientList) {
+					//System.out.println("Client Name : "+clientName);
 					writeString(CLIENT_NAME_COL, row, clientName);
+					//System.out.println("Client Id : "+clientNameToClientId.get(clientName));
 					writeLong(CLIENT_ID_COL, row, clientNameToClientId.get(clientName));
 					row = clientSheet.createRow(++rowIndex);
 				}
