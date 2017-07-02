@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.client.data;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.CompareToBuilder;
@@ -104,6 +105,173 @@ final public class ClientData implements Comparable<ClientData> {
 	private final Boolean isAddressEnabled;
 
     private final List<DatatableData> datatables;
+
+    //import fields
+    private transient Integer rowIndex;
+    private String dateFormat;
+    private Locale locale;
+
+
+    public ClientData(Integer rowIndex,String firstname,String lastname,String middlename,LocalDate activationDate,Boolean active,String externalId,Long officeId,Long staffId ) {
+        this.rowIndex=rowIndex;
+        this.dateFormat="yyyy-MM-dd";
+        this.locale=Locale.ENGLISH;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.middlename = middlename;
+        this.activationDate=activationDate;
+        this.active=active;
+        this.externalId=externalId;
+        this.officeId=officeId;
+        this.staffId=staffId;
+        this.id = null;
+        this.accountNo = null;
+        this.status = null;
+        this.subStatus = null;
+        this.fullname = null;
+        this.displayName = null;
+        this.mobileNo = null;
+        this.dateOfBirth = null;
+        this.gender = null;
+        this.clientType = null;
+        this.clientClassification = null;
+        this.isStaff = null;
+        this.officeName = null;
+        this.transferToOfficeId = null;
+        this.transferToOfficeName =null;
+        this.imageId = null;
+        this.imagePresent = null;
+        this.staffName = null;
+        this.timeline = null;
+        this.savingsProductId = null;
+        this.savingsProductName = null;
+        this.savingsAccountId =null;
+        this.legalForm = null;
+        this.groups = null;
+        this.officeOptions = null;
+        this.staffOptions = null;
+        this.narrations = null;
+        this.savingProductOptions = null;
+        this.savingAccountOptions = null;
+        this.genderOptions = null;
+        this.clientTypeOptions = null;
+        this.clientClassificationOptions = null;
+        this.clientNonPersonConstitutionOptions = null;
+        this.clientNonPersonMainBusinessLineOptions = null;
+        this.clientLegalFormOptions = null;
+        this.clientNonPersonDetails = null;
+        this.address =null;
+        this.isAddressEnabled =null;
+        this.datatables = null;
+    }
+    public ClientData(Integer rowIndex,String fullname,LocalDate activationDate,Boolean active,String externalId,Long officeId,Long staffId){
+        this.rowIndex=rowIndex;
+        this.dateFormat="yyyy-MM-dd";
+        this.locale= Locale.ENGLISH;
+        this.firstname = null;
+        this.lastname = null;
+        this.middlename = null;
+        this.activationDate=activationDate;
+        this.active=active;
+        this.externalId=externalId;
+        this.officeId=officeId;
+        this.staffId=staffId;
+        this.id = null;
+        this.accountNo = null;
+        this.status = null;
+        this.subStatus = null;
+        this.fullname = fullname;
+        this.displayName = null;
+        this.mobileNo = null;
+        this.dateOfBirth = null;
+        this.gender = null;
+        this.clientType = null;
+        this.clientClassification = null;
+        this.isStaff = null;
+        this.officeName = null;
+        this.transferToOfficeId = null;
+        this.transferToOfficeName =null;
+        this.imageId = null;
+        this.imagePresent = null;
+        this.staffName = null;
+        this.timeline = null;
+        this.savingsProductId = null;
+        this.savingsProductName = null;
+        this.savingsAccountId =null;
+        this.legalForm = null;
+        this.groups = null;
+        this.officeOptions = null;
+        this.staffOptions = null;
+        this.narrations = null;
+        this.savingProductOptions = null;
+        this.savingAccountOptions = null;
+        this.genderOptions = null;
+        this.clientTypeOptions = null;
+        this.clientClassificationOptions = null;
+        this.clientNonPersonConstitutionOptions = null;
+        this.clientNonPersonMainBusinessLineOptions = null;
+        this.clientLegalFormOptions = null;
+        this.clientNonPersonDetails = null;
+        this.address =null;
+        this.isAddressEnabled =null;
+        this.datatables = null;
+
+    }
+
+    public ClientData(Long id) {
+        this.id = id;
+        this.accountNo = null;
+        this.externalId = null;
+        this.status = null;
+        this.subStatus = null;
+        this.active = null;
+        this.activationDate = null;
+        this.firstname = null;
+        this.middlename = null;
+        this.lastname = null;
+        this.fullname = null;
+        this.displayName = null;
+        this.mobileNo = null;
+        this.dateOfBirth = null;
+        this.gender = null;
+        this.clientType = null;
+        this.clientClassification = null;
+        this.isStaff = null;
+        this.officeId = null;
+        this.officeName = null;
+        this.transferToOfficeId = null;
+        this.transferToOfficeName = null;
+        this.imageId = null;
+        this.imagePresent = null;
+        this.staffId = null;
+        this.staffName = null;
+        this.timeline = null;
+        this.savingsProductId = null;
+        this.savingsProductName = null;
+        this.savingsAccountId = null;
+        this.legalForm = null;
+        this.groups = null;
+        this.officeOptions = null;
+        this.staffOptions = null;
+        this.narrations = null;
+        this.savingProductOptions = null;
+        this.savingAccountOptions = null;
+        this.genderOptions = null;
+        this.clientTypeOptions = null;
+        this.clientClassificationOptions = null;
+        this.clientNonPersonConstitutionOptions = null;
+        this.clientNonPersonMainBusinessLineOptions = null;
+        this.clientLegalFormOptions = null;
+        this.clientNonPersonDetails = null;
+        this.address = null;
+        this.isAddressEnabled = null;
+        this.datatables = null;
+    }
+
+    public Integer getRowIndex() {
+        return rowIndex;
+    }
+
 
     public static ClientData template(final Long officeId, final LocalDate joinedDate, final Collection<OfficeData> officeOptions,
             final Collection<StaffData> staffOptions, final Collection<CodeValueData> narrations,

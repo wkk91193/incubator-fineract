@@ -156,17 +156,18 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         sqlBuilder.append("select ");
         sqlBuilder.append(rm.officeSchema());
         sqlBuilder.append(" where o.hierarchy like ? ");
+        if (searchParameters!=null) {
+		
+			if (searchParameters.isOrderByRequested()) {
+				sqlBuilder.append("order by ").append(searchParameters.getOrderBy());
 
-        if (searchParameters.isOrderByRequested()) {
-            sqlBuilder.append("order by ").append(searchParameters.getOrderBy());
-
-            if (searchParameters.isSortOrderProvided()) {
-                sqlBuilder.append(' ').append(searchParameters.getSortOrder());
-            }
-        } else {
-            sqlBuilder.append("order by o.hierarchy");
-        }
-
+				if (searchParameters.isSortOrderProvided()) {
+					sqlBuilder.append(' ').append(searchParameters.getSortOrder());
+				}
+			} else {
+				sqlBuilder.append("order by o.hierarchy");
+			}
+		}
         return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { hierarchySearchString });
     }
 
