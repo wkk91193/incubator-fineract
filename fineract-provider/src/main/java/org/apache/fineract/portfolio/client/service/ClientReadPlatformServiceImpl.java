@@ -806,5 +806,12 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         return ClientData.template(null, null, null, null, narrations, null, null, clientTypeOptions, clientClassificationOptions, 
         		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions,null,null, null);
     }
+    
+    @Override
+	public Collection<ClientData> retrieveAllClients() {
+		this.context.authenticatedUser();
+		String sql="select "+this.clientMapper.schema();
+		return this.jdbcTemplate.query(sql,clientMapper,new Object[]{});
+	}
 
 }

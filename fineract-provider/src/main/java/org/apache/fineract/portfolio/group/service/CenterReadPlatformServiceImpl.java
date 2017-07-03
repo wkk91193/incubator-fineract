@@ -409,8 +409,9 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
 
     @Override
     public Collection<CenterData> retrieveAll(SearchParameters searchParameters, PaginationParameters parameters) {
-
+    	if(parameters!=null){
         this.paginationParametersDataValidator.validateParameterValues(parameters, supportedOrderByValues, "audits");
+    	}
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
@@ -422,6 +423,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         List<Object> paramList = new ArrayList<>(
                 Arrays.asList(hierarchySearchString));
         
+        if(searchParameters!=null){
         final String extraCriteria = getCenterExtraCriteria(this.centerMapper.schema(), paramList, searchParameters);
         this.columnValidator.validateSqlInjection(sqlBuilder.toString(), extraCriteria);
         if (StringUtils.isNotBlank(extraCriteria)) {
@@ -438,7 +440,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
                 sqlBuilder.append(" offset ").append(searchParameters.getOffset());
             }
         }
-
+       }
         return this.jdbcTemplate.query(sqlBuilder.toString(), this.centerMapper, paramList.toArray());
     }
 
