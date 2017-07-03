@@ -212,4 +212,9 @@ public class CenterData {
     public void setDatatables(final List<DatatableData> datatables) {
         this.datatables = datatables;
     }
+
+	public String getOfficeName() {
+		return officeName;
+	}
+    
 }
