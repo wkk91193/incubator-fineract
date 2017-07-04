@@ -83,4 +83,9 @@ public class CurrencyData {
 
         return builder.toString();
     }
+
+	public String getName() {
+		return name;
+	}
+    
 }

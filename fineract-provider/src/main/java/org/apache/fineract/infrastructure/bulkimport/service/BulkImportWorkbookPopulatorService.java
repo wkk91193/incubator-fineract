@@ -25,4 +25,6 @@ public interface BulkImportWorkbookPopulatorService {
   public Response getClientTemplate(final String entityType, final Long officeId, final Long staffId);
   public Response getCentersTemplate(final String entityType, final Long officeId, final Long staffId);
   public Response getGroupsTemplate(String entityType, Long officeId, Long staffId,Long centerId, Long clientId);
+  public Response getLoanTemplate(final String entityType,final Long officeId,final Long staffId,final Long clientId,final Long groupId,
+		  final Long productId,final Long fundId,final Long paymentTypeId,final String code);
 }
