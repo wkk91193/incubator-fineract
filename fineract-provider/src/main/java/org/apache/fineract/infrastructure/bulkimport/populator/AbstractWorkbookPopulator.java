@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.populator;
 
+import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -64,6 +67,7 @@ public abstract class AbstractWorkbookPopulator implements WorkbookPopulator {
 
   protected void writeDate(int colIndex, Row row, String value, CellStyle dateCellStyle) {
     try {
+    	//yyyy-MM-dd
       // To make validation between functions inclusive.
       Date date = new SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH).parse(value);
       Calendar cal = Calendar.getInstance();
@@ -79,7 +83,12 @@ public abstract class AbstractWorkbookPopulator implements WorkbookPopulator {
       throw new IllegalArgumentException("ParseException");
     }
   }
-
+  
+  protected void writeBigDecimal(int colIndex, Row row, BigDecimal value) {
+		row.createCell(colIndex).setCellValue(value.doubleValue());
+		;
+	}
+ 
   protected void setOfficeDateLookupTable(Sheet sheet, List<OfficeData> offices, int officeNameCol,
       int activationDateCol) {
     Workbook workbook = sheet.getWorkbook();
@@ -97,4 +106,42 @@ public abstract class AbstractWorkbookPopulator implements WorkbookPopulator {
     }
   }
 
+  protected void setClientAndGroupDateLookupTable(Sheet sheet, List<ClientData> clients,
+			List<GroupGeneralData> groups, int nameCol, int activationDateCol, int clientAccountNoCol) {
+		Workbook workbook = sheet.getWorkbook();
+		CellStyle dateCellStyle = workbook.createCellStyle();
+		short df = workbook.createDataFormat().getFormat("dd/mm/yy");
+		dateCellStyle.setDataFormat(df);
+		int rowIndex = 0;
+        SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = null;
+        try {
+		for (ClientData client : clients) {
+			Row row = sheet.getRow(++rowIndex);
+			if (row == null)
+				row = sheet.createRow(rowIndex);
+			writeString(nameCol, row, client.displayName().replaceAll("[ )(] ", "_") + "(" + client.id() + ")");
+
+            date = inputFormat.parse(client.getActivationDate().toString());
+			writeDate(activationDateCol, row, outputFormat.format(date), dateCellStyle);
+
+			writeString(clientAccountNoCol, row, client.accountNo());
+		}
+		if (groups == null)
+			return;
+		    for (GroupGeneralData group : groups) {
+			    Row row = sheet.getRow(++rowIndex);
+			    if (row == null)
+			        row = sheet.createRow(rowIndex);
+			        writeString(nameCol, row, group.getName().replaceAll("[ )(] ", "_"));
+
+			        date=inputFormat.parse(group.getActivationDate().toString());
+			        writeDate(activationDateCol, row, outputFormat.format(date), dateCellStyle);
+		    }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+	}
+  
 }

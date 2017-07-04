@@ -188,19 +188,21 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         sqlBuilder.append(" where o.hierarchy like ?");
         List<Object> paramList = new ArrayList<>(
                 Arrays.asList(hierarchySearchString));
-        final String extraCriteria = getGroupExtraCriteria(this.allGroupTypesDataMapper.schema(), paramList, searchParameters);
-        if (StringUtils.isNotBlank(extraCriteria)) {
-            sqlBuilder.append(" and (").append(extraCriteria).append(")");
-        }
+        if (searchParameters!=null) {
+        	final String extraCriteria = getGroupExtraCriteria(this.allGroupTypesDataMapper.schema(), paramList, searchParameters);	
+        	if (StringUtils.isNotBlank(extraCriteria)) {
+                sqlBuilder.append(" and (").append(extraCriteria).append(")");
+            }
+		}
+		if (parameters != null) {
+			if (parameters.isOrderByRequested()) {
+				sqlBuilder.append(parameters.orderBySql());
+			}
 
-        if (parameters.isOrderByRequested()) {
-            sqlBuilder.append(parameters.orderBySql());
-        }
-
-        if (parameters.isLimited()) {
-            sqlBuilder.append(parameters.limitSql());
-        }
-
+			if (parameters.isLimited()) {
+				sqlBuilder.append(parameters.limitSql());
+			}
+		}
         return this.jdbcTemplate.query(sqlBuilder.toString(), this.allGroupTypesDataMapper, paramList.toArray());
     }
 
