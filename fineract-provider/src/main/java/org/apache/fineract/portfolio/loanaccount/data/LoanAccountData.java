@@ -1622,4 +1622,30 @@ public class LoanAccountData {
     public void setDatatables(final List<DatatableData> datatables) {
             this.datatables = datatables;
     }
+
+	public Long getClientId() {
+		return clientId;
+	}
+
+	public String getClientName() {
+		return clientName;
+	}
+
+	public BigDecimal getPrincipal() {
+		return principal;
+	}
+
+	public LoanApplicationTimelineData getTimeline() {
+		return timeline;
+	}
+
+	public String getAccountNo() {
+		return accountNo;
+	}
+
+	public String getLoanProductName() {
+		return loanProductName;
+	}
+    
+    
 }

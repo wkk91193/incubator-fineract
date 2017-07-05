@@ -29,6 +29,7 @@ import java.util.Locale;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -143,5 +144,33 @@ public abstract class AbstractWorkbookPopulator implements WorkbookPopulator {
             e.printStackTrace();
         }
 	}
+  
+  protected void setClientAndLoanLookupTable(Sheet sheet, List<LoanAccountData> loans, int nameCol, int accountCol,
+		  int loanProductCol,int principalCol,int loanDisbursementDateCol) {
+		Workbook workbook = sheet.getWorkbook();
+		CellStyle dateCellStyle = workbook.createCellStyle();
+		short df = workbook.createDataFormat().getFormat("dd/mm/yy");
+		dateCellStyle.setDataFormat(df);
+		int rowIndex = 0;
+        SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = null;
+		for (LoanAccountData loanaccount : loans) {
+			Row row = sheet.getRow(++rowIndex);
+			if (row == null)
+				row = sheet.createRow(rowIndex);
+			writeString(nameCol, row, loanaccount.getClientName().replaceAll("[ )(] ", "_"));
+			writeString(accountCol, row, loanaccount.getAccountNo());
+			writeString(loanProductCol, row, loanaccount.getLoanProductName());
+			writeBigDecimal(principalCol, row, loanaccount.getPrincipal());
+            try {
+                date = inputFormat.parse(loanaccount.getDisbursementDate().toString());
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            writeDate(loanDisbursementDateCol, row,outputFormat.format(date) , dateCellStyle);
+		}
+	}
+  
   
 }

@@ -38,6 +38,7 @@ import org.apache.fineract.infrastructure.bulkimport.populator.centers.CentersWo
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.group.GroupsWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loan.LoanWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.loanrepayment.LoanRepaymentWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -58,6 +59,8 @@ import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
@@ -80,6 +83,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
   private final LoanProductReadPlatformService loanProductReadPlatformService;
   private final CurrencyReadPlatformService currencyReadPlatformService;
+  private final LoanReadPlatformService loanReadPlatformService;
   
   @Autowired
   public BulkImportWorkbookPopulatorServiceImpl(final PlatformSecurityContext context,
@@ -91,7 +95,8 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
       final FundReadPlatformService fundReadPlatformService,
       final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
       final LoanProductReadPlatformService loanProductReadPlatformService,
-      final CurrencyReadPlatformService currencyReadPlatformService) {
+      final CurrencyReadPlatformService currencyReadPlatformService,
+      final LoanReadPlatformService loanReadPlatformService) {
     this.officeReadPlatformService = officeReadPlatformService;
     this.staffReadPlatformService = staffReadPlatformService;
     this.context = context;
@@ -102,7 +107,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
     this.paymentTypeReadPlatformService=paymentTypeReadPlatformService;
     this.loanProductReadPlatformService=loanProductReadPlatformService;
     this.currencyReadPlatformService=currencyReadPlatformService;
-    
+    this.loanReadPlatformService=loanReadPlatformService;
   }
 
   @Override
@@ -299,6 +304,7 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		List<PaymentTypeData> paymentTypeData = null;
 		if (paymentTypeId == null) {
 			paymentTypeData = (List<PaymentTypeData>) this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+			//System.out.println("PaymentTypes List size bulkimportserviceImpl :"+paymentTypeData.size());
 		} else {
 			paymentTypeData = new ArrayList<>();
 			paymentTypeData.add(this.paymentTypeReadPlatformService.retrieveOne(paymentTypeId));
@@ -310,6 +316,7 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		List<FundData> funds = null;
 		if (fundId == null) {
 			funds = (List<FundData>) this.fundReadPlatformService.retrieveAllFunds();
+			//System.out.println("Funds List size bulkimportserviceImpl :"+funds.size());
 		} else {
 			funds = new ArrayList<>();
 			funds.add(this.fundReadPlatformService.retrieveFund(fundId));
@@ -338,5 +345,43 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		}
 
 		return groups;
+	}
+	
+	@Override
+	public Response getLoanRepaymentTemplate(String entityType, Long officeId, Long clientId, Long fundId,
+			Long paymentTypeId, String code) {
+		WorkbookPopulator populator = null;
+		final Workbook workbook = new HSSFWorkbook();
+		if (entityType.trim().equalsIgnoreCase(LoanApiConstants.LOAN_REPAYMENT_RESOURCE_NAME)) {
+			populator = populateLoanRepaymentWorkbook(officeId, clientId, fundId, paymentTypeId, code);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+					"Unable to find requested resource");
+		}
+		populator.populate(workbook);
+		return buildResponse(workbook, entityType);
+	}
+
+	private WorkbookPopulator populateLoanRepaymentWorkbook(Long officeId, Long clientId, Long fundId,
+			Long paymentTypeId, String code) {
+		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+		this.context.authenticatedUser().validateHasReadPermission("CLIENT");
+		this.context.authenticatedUser().validateHasReadPermission("FUNDS");
+		this.context.authenticatedUser().validateHasReadPermission("PAYMENTTYPE");
+		this.context.authenticatedUser().validateHasReadPermission("CURRENCY");
+		List<OfficeData> offices = fetchOffices(officeId);
+		List<ClientData> clients = fetchClients(clientId);
+		List<FundData> funds = fetchFunds(fundId);
+		List<PaymentTypeData> paymentTypes = fetchPaymentTypes(paymentTypeId);
+		List<CurrencyData> currencies = fetchCurrencies(code);
+		List<LoanAccountData> loans = fetchLoanAccounts();
+		//System.out.println("BulkimportServiceImpl Loans size :"+loans.size());
+		return new LoanRepaymentWorkbookPopulator(loans, new OfficeSheetPopulator(offices),
+				new ClientSheetPopulator(clients, offices), new ExtrasSheetPopulator(funds, paymentTypes, currencies));
+	}
+
+	private List<LoanAccountData> fetchLoanAccounts() {
+		List<LoanAccountData> loanaccounts = (List<LoanAccountData>) loanReadPlatformService.retrieveAllLoans();
+		return loanaccounts;
 	}
 }
