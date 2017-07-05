@@ -126,4 +126,6 @@ public interface LoanApiConstants {
     public static final String datatables = "datatables";
     
     public static final String LOAN_RESOURCE_NAME="loan";
+    
+    public static final String LOAN_REPAYMENT_RESOURCE_NAME="loanrepayment";
 }

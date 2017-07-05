@@ -2188,4 +2188,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
     }
     
+    @Override
+	public Collection<LoanAccountData> retrieveAllLoans() {
+		this.context.authenticatedUser();
+		String sql="select "+loaanLoanMapper.loanSchema();
+		return this.jdbcTemplate.query(sql,loaanLoanMapper,new Object[]{});
+	}
 }
