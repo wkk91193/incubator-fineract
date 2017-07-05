@@ -32,6 +32,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
@@ -43,6 +44,7 @@ import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioPr
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
@@ -72,17 +74,20 @@ public class JournalEntriesApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PlatformSecurityContext context;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
 
     @Autowired
     public JournalEntriesApiResource(final PlatformSecurityContext context,
             final JournalEntryReadPlatformService journalEntryReadPlatformService,
             final DefaultToApiJsonSerializer<Object> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+            final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.apiJsonSerializerService = toApiJsonSerializer;
         this.journalEntryReadPlatformService = journalEntryReadPlatformService;
+        this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
     }
 
     @GET
@@ -208,4 +213,17 @@ public class JournalEntriesApiResource {
     private boolean is(final String commandParam, final String commandValue) {
         return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
+    
+    @GET
+   	@Path("bulkimporttemplate")
+   	@Produces("application/vnd.ms-excel")
+   	// @Produces(MediaType.APPLICATION_OCTET_STREAM)
+   	public Response getJournalEntriesTemplate(@QueryParam("officeId") final Long officeId,
+   			@QueryParam("glAccountId") final Long glAccountId,
+   			 @QueryParam("fundId") final Long fundId,
+   			@QueryParam("paymentTypeId") final Long paymentTypeId, @QueryParam("code") final String code) {
+   		
+   		return bulkImportWorkbookPopulatorService.getJournalEntriesTemplate("journalentry", officeId, glAccountId, fundId, paymentTypeId, code);
+   	}
+    
 }
