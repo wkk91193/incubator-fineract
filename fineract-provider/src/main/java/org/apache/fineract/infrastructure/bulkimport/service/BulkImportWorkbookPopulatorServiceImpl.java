@@ -26,9 +26,13 @@ import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.fineract.accounting.glaccount.data.GLAccountData;
+import org.apache.fineract.accounting.glaccount.service.GLAccountReadPlatformService;
+import org.apache.fineract.accounting.journalentry.api.JournalEntriesApiConstants;
 import org.apache.fineract.infrastructure.bulkimport.populator.CenterSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.ClientSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.ExtrasSheetPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.GlAccountSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.GroupSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.LoanProductSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.OfficeSheetPopulator;
@@ -37,6 +41,7 @@ import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator
 import org.apache.fineract.infrastructure.bulkimport.populator.centers.CentersWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.group.GroupsWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.journalentry.JournalEntriesWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loan.LoanWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loanrepayment.LoanRepaymentWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
@@ -84,6 +89,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   private final LoanProductReadPlatformService loanProductReadPlatformService;
   private final CurrencyReadPlatformService currencyReadPlatformService;
   private final LoanReadPlatformService loanReadPlatformService;
+  private final GLAccountReadPlatformService glAccountReadPlatformService;
   
   @Autowired
   public BulkImportWorkbookPopulatorServiceImpl(final PlatformSecurityContext context,
@@ -96,7 +102,8 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
       final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
       final LoanProductReadPlatformService loanProductReadPlatformService,
       final CurrencyReadPlatformService currencyReadPlatformService,
-      final LoanReadPlatformService loanReadPlatformService) {
+      final LoanReadPlatformService loanReadPlatformService,
+      final GLAccountReadPlatformService glAccountReadPlatformService) {
     this.officeReadPlatformService = officeReadPlatformService;
     this.staffReadPlatformService = staffReadPlatformService;
     this.context = context;
@@ -108,6 +115,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
     this.loanProductReadPlatformService=loanProductReadPlatformService;
     this.currencyReadPlatformService=currencyReadPlatformService;
     this.loanReadPlatformService=loanReadPlatformService;
+    this.glAccountReadPlatformService=glAccountReadPlatformService;
   }
 
   @Override
@@ -384,4 +392,50 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		List<LoanAccountData> loanaccounts = (List<LoanAccountData>) loanReadPlatformService.retrieveAllLoans();
 		return loanaccounts;
 	}
+	
+	@Override
+	public Response getJournalEntriesTemplate(String entityType, Long officeId, Long glAccountId, Long fundId,
+			Long paymentTypeId, String code) {
+		WorkbookPopulator populator = null;
+		final Workbook workbook = new HSSFWorkbook();
+		if (entityType.trim().equalsIgnoreCase(JournalEntriesApiConstants.JOURNAL_ENTRY_RESOURCE_NAME)) {
+			populator = populateJournalEntriesWorkbook(officeId, glAccountId, fundId, paymentTypeId, code);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+					"Unable to find requested resource");
+		}
+		populator.populate(workbook);
+		return buildResponse(workbook, entityType);
+	}
+
+	private WorkbookPopulator populateJournalEntriesWorkbook(Long officeId, Long glAccountId, Long fundId,
+			Long paymentTypeId, String code) {
+		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+		this.context.authenticatedUser().validateHasReadPermission("GLACCOUNT");
+		this.context.authenticatedUser().validateHasReadPermission("FUNDS");
+		this.context.authenticatedUser().validateHasReadPermission("PAYMENTTYPE");
+		this.context.authenticatedUser().validateHasReadPermission("CURRENCY");
+		List<OfficeData> offices = fetchOffices(officeId);
+		List<GLAccountData> glAccounts = fetchGLAccounts(glAccountId);
+		List<FundData> funds = fetchFunds(fundId);
+		List<PaymentTypeData> paymentTypes = fetchPaymentTypes(paymentTypeId);
+		List<CurrencyData> currencies = fetchCurrencies(code);
+		return new JournalEntriesWorkbookPopulator(new OfficeSheetPopulator(offices),
+				new GlAccountSheetPopulator(glAccounts), new ExtrasSheetPopulator(funds, paymentTypes, currencies));
+	}
+
+	private List<GLAccountData> fetchGLAccounts(Long glAccountId) {
+		List<GLAccountData> glaccounts = null;
+		if (glAccountId == null) {
+			glaccounts = (List<GLAccountData>) this.glAccountReadPlatformService.retrieveAllGLAccounts(null, null, null,
+					null, null, null);
+			 System.out.println("GL account list size"+glaccounts.size());
+		} else {
+			glaccounts = new ArrayList<>();
+			glaccounts.add(this.glAccountReadPlatformService.retrieveGLAccountById(glAccountId, null));
+		}
+
+		return glaccounts;
+	}
+	
 }
