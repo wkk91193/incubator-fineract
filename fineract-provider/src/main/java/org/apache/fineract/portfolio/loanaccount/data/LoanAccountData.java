@@ -1646,6 +1646,19 @@ public class LoanAccountData {
 	public String getLoanProductName() {
 		return loanProductName;
 	}
-    
+	
+	public static final Comparator<LoanAccountData> ClientNameComparator = new Comparator<LoanAccountData>() {
+
+		@Override
+		public int compare(LoanAccountData loan1, LoanAccountData loan2) {
+			String clientOfLoan1 = loan1.getClientName().toUpperCase(Locale.ENGLISH);
+			String clientOfLoan2 = loan2.getClientName().toUpperCase(Locale.ENGLISH);
+			return clientOfLoan1.compareTo(clientOfLoan2);
+		}
+	};
+
+	public String getClientAccountNo() {
+		return clientAccountNo;
+	}
     
 }

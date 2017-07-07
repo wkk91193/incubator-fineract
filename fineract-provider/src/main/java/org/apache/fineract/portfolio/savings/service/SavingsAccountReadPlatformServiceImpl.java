@@ -1229,4 +1229,11 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
      * return SavingsAccountAnnualFeeData.instance(id, accountNo,
      * annualFeeNextDueDate); } }
      */
+    @Override
+    public Collection<SavingsAccountData> retrieveAllSavingsAccounts() {
+		this.context.authenticatedUser();
+		String sql="select "+savingAccountMapper.schemaSql;
+		return this.jdbcTemplate.query(sql,savingAccountMapper,new Object[]{});
+	}
+
 }

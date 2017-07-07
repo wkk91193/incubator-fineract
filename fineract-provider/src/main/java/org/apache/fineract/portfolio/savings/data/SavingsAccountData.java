@@ -20,8 +20,10 @@ package org.apache.fineract.portfolio.savings.data;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -565,4 +567,26 @@ public class SavingsAccountData {
     public void setDatatables(final List<DatatableData> datatables) {
         this.datatables = datatables;
     }
+    
+    public static final Comparator<SavingsAccountData> ClientNameComparator = new Comparator<SavingsAccountData>() {
+
+		@Override
+		public int compare(SavingsAccountData savings1, SavingsAccountData savings2) {
+			String clientOfSavings1 = savings1.getClientName().toUpperCase(Locale.ENGLISH);
+			String clientOfSavings2 = savings2.getClientName().toUpperCase(Locale.ENGLISH);
+			return clientOfSavings1.compareTo(clientOfSavings2);
+		}
+	};
+
+	public String getClientName() {
+		return clientName;
+	}
+
+	public String getAccountNo() {
+		return accountNo;
+	}
+
+	public Long getClientId() {
+		return clientId;
+	}
 }
