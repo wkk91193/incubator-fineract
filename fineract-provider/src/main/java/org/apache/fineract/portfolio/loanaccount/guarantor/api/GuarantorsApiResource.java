@@ -35,11 +35,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
@@ -89,6 +91,7 @@ public class GuarantorsApiResource {
     private final PlatformSecurityContext context;
     private final PortfolioAccountReadPlatformService portfolioAccountReadPlatformService;
     private final LoanReadPlatformService loanReadPlatformService;
+    private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
 
     @Autowired
     public GuarantorsApiResource(final PlatformSecurityContext context, final GuarantorReadPlatformService guarantorReadPlatformService,
@@ -96,7 +99,8 @@ public class GuarantorsApiResource {
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final CodeValueReadPlatformService codeValueReadPlatformService,
             final PortfolioAccountReadPlatformService portfolioAccountReadPlatformService,
-            final LoanReadPlatformService loanReadPlatformService) {
+            final LoanReadPlatformService loanReadPlatformService,
+            final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
@@ -105,6 +109,7 @@ public class GuarantorsApiResource {
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.portfolioAccountReadPlatformService = portfolioAccountReadPlatformService;
         this.loanReadPlatformService = loanReadPlatformService;
+        this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
     }
 
     @GET
@@ -218,4 +223,13 @@ public class GuarantorsApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.apiJsonSerializerService.serialize(settings, guarantorData, ACCOUNT_TRANSFER_API_RESPONSE_DATA_PARAMETERS);
     }
+    
+    @GET
+	@Path("bulkimporttemplate")
+	@Produces("application/vnd.ms-excel")
+	// @Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response getGuarantorTemplate(@QueryParam("officeId") final Long officeId,
+			@QueryParam("clientId") final Long clientId) {
+		return bulkImportWorkbookPopulatorService.getGuarantorTemplate("guarantor", officeId, clientId);
+	}
 }

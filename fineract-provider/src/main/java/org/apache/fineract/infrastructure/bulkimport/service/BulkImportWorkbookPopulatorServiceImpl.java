@@ -41,6 +41,7 @@ import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator
 import org.apache.fineract.infrastructure.bulkimport.populator.centers.CentersWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.group.GroupsWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.guarantor.GuarantorWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.journalentry.JournalEntriesWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loan.LoanWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loanrepayment.LoanRepaymentWorkbookPopulator;
@@ -65,11 +66,14 @@ import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.guarantor.GuarantorConstants;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,6 +94,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   private final CurrencyReadPlatformService currencyReadPlatformService;
   private final LoanReadPlatformService loanReadPlatformService;
   private final GLAccountReadPlatformService glAccountReadPlatformService;
+  private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
   
   @Autowired
   public BulkImportWorkbookPopulatorServiceImpl(final PlatformSecurityContext context,
@@ -103,7 +108,8 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
       final LoanProductReadPlatformService loanProductReadPlatformService,
       final CurrencyReadPlatformService currencyReadPlatformService,
       final LoanReadPlatformService loanReadPlatformService,
-      final GLAccountReadPlatformService glAccountReadPlatformService) {
+      final GLAccountReadPlatformService glAccountReadPlatformService,
+      final SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
     this.officeReadPlatformService = officeReadPlatformService;
     this.staffReadPlatformService = staffReadPlatformService;
     this.context = context;
@@ -116,6 +122,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
     this.currencyReadPlatformService=currencyReadPlatformService;
     this.loanReadPlatformService=loanReadPlatformService;
     this.glAccountReadPlatformService=glAccountReadPlatformService;
+    this.savingsAccountReadPlatformService=savingsAccountReadPlatformService;
   }
 
   @Override
@@ -429,13 +436,42 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		if (glAccountId == null) {
 			glaccounts = (List<GLAccountData>) this.glAccountReadPlatformService.retrieveAllGLAccounts(null, null, null,
 					null, null, null);
-			 System.out.println("GL account list size"+glaccounts.size());
 		} else {
 			glaccounts = new ArrayList<>();
 			glaccounts.add(this.glAccountReadPlatformService.retrieveGLAccountById(glAccountId, null));
 		}
 
 		return glaccounts;
+	}
+	
+	@Override
+	public Response getGuarantorTemplate(String entityType, Long officeId, Long clientId) {
+		WorkbookPopulator populator = null;
+		final Workbook workbook = new HSSFWorkbook();
+		if (entityType.trim().equalsIgnoreCase(GuarantorConstants.GUARANTOR_RESOURCE_NAME)) {
+			populator = populateGuarantorWorkbook(officeId, clientId);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+					"Unable to find requested resource");
+		}
+		populator.populate(workbook);
+		return buildResponse(workbook, entityType);
+	}
+
+	private WorkbookPopulator populateGuarantorWorkbook(Long officeId, Long clientId) {
+		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+		this.context.authenticatedUser().validateHasReadPermission("STAFF");
+		List<OfficeData> offices = fetchOffices(officeId);
+		List<ClientData>clients=fetchClients(clientId);
+		List<LoanAccountData> loans = fetchLoanAccounts();
+		List<SavingsAccountData> savingsaccounts = fetchSavingsAccounts();
+		return new GuarantorWorkbookPopulator(new OfficeSheetPopulator(offices),
+				new ClientSheetPopulator(clients, offices),loans,savingsaccounts);
+	}
+
+	private List<SavingsAccountData> fetchSavingsAccounts() {
+		List<SavingsAccountData> savingsaccounts = (List<SavingsAccountData>)savingsAccountReadPlatformService.retrieveAllSavingsAccounts();
+		return savingsaccounts;
 	}
 	
 }
