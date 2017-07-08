@@ -45,11 +45,13 @@ import org.apache.fineract.infrastructure.bulkimport.populator.guarantor.Guarant
 import org.apache.fineract.infrastructure.bulkimport.populator.journalentry.JournalEntriesWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loan.LoanWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.loanrepayment.LoanRepaymentWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.office.OfficeWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
+import org.apache.fineract.organisation.office.api.OfficeApiConstants;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -473,5 +475,25 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		List<SavingsAccountData> savingsaccounts = (List<SavingsAccountData>)savingsAccountReadPlatformService.retrieveAllSavingsAccounts();
 		return savingsaccounts;
 	}
-	
+
+	@Override
+	public Response getOfficesTemplate(final String entityType, final Long officeId) {
+		WorkbookPopulator populator=null;
+		final Workbook workbook=new HSSFWorkbook();
+		if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
+			populator=populateOfficeWorkbook(officeId);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+					"Unable to find requested resource");
+		}
+		populator.populate(workbook);
+		return buildResponse(workbook, entityType);
+	}
+
+
+	private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
+		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+		List<OfficeData> offices = fetchOffices(officeId);
+		return new OfficeWorkbookPopulator(offices);
+	}
 }
