@@ -195,4 +195,11 @@ public class GLAccountData {
         return null;
     }
 
+    public EnumOptionData getUsage() {
+        return usage;
+    }
+
+    public CodeValueData getTagId() {
+        return tagId;
+    }
 }
