@@ -35,6 +35,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.fineract.accounting.common.AccountingConstants;
@@ -46,6 +47,7 @@ import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationP
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
@@ -78,13 +80,14 @@ public class GLAccountsApiResource {
     private final PlatformSecurityContext context;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
+    private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
 
     @Autowired
     public GLAccountsApiResource(final PlatformSecurityContext context, final GLAccountReadPlatformService glAccountReadPlatformService,
             final DefaultToApiJsonSerializer<GLAccountData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final AccountingDropdownReadPlatformService dropdownReadPlatformService,
-            final CodeValueReadPlatformService codeValueReadPlatformService) {
+            final CodeValueReadPlatformService codeValueReadPlatformService, final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService                     ) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
@@ -92,6 +95,7 @@ public class GLAccountsApiResource {
         this.glAccountReadPlatformService = glAccountReadPlatformService;
         this.dropdownReadPlatformService = dropdownReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
+        this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
     }
 
     @GET
@@ -219,4 +223,14 @@ public class GLAccountsApiResource {
         }
         return returnList;
     }
+
+    @GET
+    @Path("bulkimporttemplate")
+    @Produces("application/vnd.ms-excel")
+    // @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response getJournalEntriesTemplate(@QueryParam("glAccountId") final Long glAccountId) {
+        return bulkImportWorkbookPopulatorService.getChartOfAccountsTemplate("glaccount",glAccountId);
+    }
+
+
 }

@@ -26,6 +26,7 @@ import java.util.List;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.fineract.accounting.glaccount.api.GLAccountsApiConstants;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.service.GLAccountReadPlatformService;
 import org.apache.fineract.accounting.journalentry.api.JournalEntriesApiConstants;
@@ -39,6 +40,7 @@ import org.apache.fineract.infrastructure.bulkimport.populator.OfficeSheetPopula
 import org.apache.fineract.infrastructure.bulkimport.populator.PersonnelSheetPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.centers.CentersWorkbookPopulator;
+import org.apache.fineract.infrastructure.bulkimport.populator.chartofaccounts.ChartOfAccountsWorkbook;
 import org.apache.fineract.infrastructure.bulkimport.populator.client.ClientWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.group.GroupsWorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.guarantor.GuarantorWorkbookPopulator;
@@ -490,10 +492,30 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		return buildResponse(workbook, entityType);
 	}
 
-
 	private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
 		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
 		List<OfficeData> offices = fetchOffices(officeId);
 		return new OfficeWorkbookPopulator(offices);
 	}
+
+	@Override
+	public Response getChartOfAccountsTemplate(String entityType,Long glAccountId) {
+		WorkbookPopulator populator=null;
+		final Workbook workbook=new HSSFWorkbook();
+		if (entityType.trim().equalsIgnoreCase(GLAccountsApiConstants.GLACCOUNTS_RESOURCE_NAME)) {
+			populator=populateChartOfAccountsWorkbook(glAccountId);
+		} else {
+			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+					"Unable to find requested resource");
+		}
+		populator.populate(workbook);
+		return buildResponse(workbook, entityType);
+	}
+
+	private WorkbookPopulator populateChartOfAccountsWorkbook(Long glAccountId) {
+		this.context.authenticatedUser().validateHasReadPermission("GLACCOUNT");
+		List<GLAccountData> glAccounts = fetchGLAccounts(glAccountId);
+		return new ChartOfAccountsWorkbook(glAccounts);
+	}
+
 }
