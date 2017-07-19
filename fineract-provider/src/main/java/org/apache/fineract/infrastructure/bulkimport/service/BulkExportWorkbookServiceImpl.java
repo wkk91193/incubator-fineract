@@ -21,9 +21,11 @@ package org.apache.fineract.infrastructure.bulkimport.service;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.bulkimport.exporthandler.DataExportHandler;
+import org.apache.fineract.infrastructure.bulkimport.exporthandler.center.CenterDataExportHandler;
 import org.apache.fineract.infrastructure.bulkimport.exporthandler.client.ClientDataExportHandler;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.group.api.GroupingTypesApiConstants;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,5 +66,25 @@ public class BulkExportWorkbookServiceImpl implements BulkExportWorkbookService 
         }
         return Response.ok(fileDetail.getFileName()+" uploaded successfully").build();
     }
+
+    @Override
+    public Response postCentersTemplate(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail) {
+        try {
+            Workbook workbook = new HSSFWorkbook(inputStream);
+            DataExportHandler dataExportHandler=null;
+            if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.CENTER_RESOURCE_NAME)) {
+                dataExportHandler = new CenterDataExportHandler(workbook);
+            } else {
+                throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+                        "Unable to find requested resource");
+            }
+            dataExportHandler.readExcelFile();
+            dataExportHandler.Upload(commandsSourceWritePlatformService);
+        }catch (IOException ex){
+            throw new GeneralPlatformDomainRuleException("error.msg.io.exception","IO exception occured with "+fileDetail.getFileName()+" "+ex.getMessage());
+        }
+        return Response.ok(fileDetail.getFileName()+" uploaded successfully").build();
+    }
+
 
 }

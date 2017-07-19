@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.group.api;
 
+import java.io.InputStream;
 import java.util.*;
 
 import javax.ws.rs.Consumes;
@@ -35,11 +36,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import com.sun.jersey.core.header.FormDataContentDisposition;
+import com.sun.jersey.multipart.FormDataParam;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.journalentry.api.DateParam;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkExportWorkbookService;
 import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
@@ -96,6 +100,7 @@ public class CentersApiResource {
     private final MeetingReadPlatformService meetingReadPlatformService;
     private final EntityDatatableChecksReadService entityDatatableChecksReadService;
     private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
+    private final BulkExportWorkbookService bulkExportWorkbookService;
 
 
     @Autowired
@@ -108,7 +113,7 @@ public class CentersApiResource {
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
             final EntityDatatableChecksReadService entityDatatableChecksReadService,
-            final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService) {
+            final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService, final BulkExportWorkbookService bulkExportWorkbookService) {
 
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
@@ -124,6 +129,7 @@ public class CentersApiResource {
         this.meetingReadPlatformService = meetingReadPlatformService;
         this.entityDatatableChecksReadService=entityDatatableChecksReadService;
         this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
+        this.bulkExportWorkbookService=bulkExportWorkbookService;
     }
 
     @GET
@@ -348,4 +354,12 @@ public class CentersApiResource {
    	public Response getCentersTemplate(@QueryParam("officeId")final Long officeId,@QueryParam("staffId")final Long staffId) {
        	return bulkImportWorkbookPopulatorService.getCentersTemplate("center", officeId,staffId);
    	}
+    @POST
+    @Path("bulkuploadtemplate")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response postCentersTemplate(@FormDataParam("file") InputStream uploadedInputStream,
+                                       @FormDataParam("file") FormDataContentDisposition fileDetail){
+        return bulkExportWorkbookService.postCentersTemplate("center", uploadedInputStream,fileDetail);
+    }
+
 }

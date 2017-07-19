@@ -30,4 +30,5 @@ import java.io.InputStream;
  */
 public interface BulkExportWorkbookService {
     public Response postClientTemplate(String entityType, InputStream inputStream,FormDataContentDisposition fileDetail);
+    public Response postCentersTemplate(String entityType, InputStream inputStream,FormDataContentDisposition fileDetail);
 }
