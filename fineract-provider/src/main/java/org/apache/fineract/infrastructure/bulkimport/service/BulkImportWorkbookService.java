@@ -24,5 +24,6 @@ import javax.ws.rs.core.Response;
 import java.io.InputStream;
 
 public interface BulkImportWorkbookService {
-    public Response postClientTemplate(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail);
+	
+    public Response importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail);
 }

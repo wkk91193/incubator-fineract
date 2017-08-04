@@ -334,7 +334,7 @@ public class ClientsApiResource {
     @Path("bulkuploadtemplate")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response postClientTemplate(@FormDataParam("file") InputStream uploadedInputStream,
-                                       @FormDataParam("file") FormDataContentDisposition fileDetail){
-        return bulkImportWorkbookService.postClientTemplate("client", uploadedInputStream,fileDetail);
+        @FormDataParam("file") FormDataContentDisposition fileDetail){
+        return bulkImportWorkbookService.importWorkbook("client", uploadedInputStream,fileDetail);
     }
 }
