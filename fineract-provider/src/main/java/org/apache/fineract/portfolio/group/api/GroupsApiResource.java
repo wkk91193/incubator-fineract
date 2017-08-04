@@ -452,6 +452,7 @@ public class GroupsApiResource {
    	@Produces("application/vnd.ms-excel")
    	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
    	public Response getGroupsTemplate(@QueryParam("officeId")final Long officeId,@QueryParam("staffId")final Long staffId,@QueryParam("centerId")final Long centerId,@QueryParam("clientId")final Long clientId) {
-       	return bulkImportWorkbookPopulatorService.getGroupsTemplate("group", officeId, staffId, centerId, clientId);
+       	return bulkImportWorkbookPopulatorService.getTemplate("group", officeId, staffId, centerId, clientId,null,
+                null,null,null,null,null);
    	}
 }

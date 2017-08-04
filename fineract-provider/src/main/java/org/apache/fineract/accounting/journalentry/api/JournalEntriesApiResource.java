@@ -223,7 +223,7 @@ public class JournalEntriesApiResource {
    			 @QueryParam("fundId") final Long fundId,
    			@QueryParam("paymentTypeId") final Long paymentTypeId, @QueryParam("code") final String code) {
    		
-   		return bulkImportWorkbookPopulatorService.getJournalEntriesTemplate("journalentry", officeId, glAccountId, fundId, paymentTypeId, code);
+   		return bulkImportWorkbookPopulatorService.getTemplate("journalentry", officeId,null ,null,null,null,null,fundId,paymentTypeId,code,glAccountId);
    	}
     
 }

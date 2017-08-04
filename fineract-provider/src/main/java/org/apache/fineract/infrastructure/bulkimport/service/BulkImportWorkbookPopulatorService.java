@@ -22,15 +22,7 @@ import javax.ws.rs.core.Response;
 
 public interface BulkImportWorkbookPopulatorService {
 
-  public Response getClientTemplate(final String entityType, final Long officeId, final Long staffId);
-  public Response getCentersTemplate(final String entityType, final Long officeId, final Long staffId);
-  public Response getGroupsTemplate(String entityType, Long officeId, Long staffId,Long centerId, Long clientId);
-  public Response getLoanTemplate(final String entityType,final Long officeId,final Long staffId,final Long clientId,final Long groupId,
-		  final Long productId,final Long fundId,final Long paymentTypeId,final String code);
-  public Response getLoanRepaymentTemplate(final String entityType,final Long officeId,final Long clientId,final Long fundId,
-		  final Long paymentTypeId,final String code);
-  public Response getJournalEntriesTemplate(final String entityType,final Long officeId,final Long glAccountId,final Long fundId,final Long paymentTypeId,final String code);
-  public Response getGuarantorTemplate(final String entityType, final Long officeId, final Long clientId);
-  public Response getOfficesTemplate(final String entityType,final Long officeId );
-  public Response getChartOfAccountsTemplate(final String entityType,final Long glAccountId);
+  public Response getTemplate(final String entityType, final Long officeId, final Long staffId,final Long centerId,
+                              final Long clientId,final Long groupId, final Long productId,final Long fundId,
+                              final Long paymentTypeId,final String code,final Long glAccountId);
 }

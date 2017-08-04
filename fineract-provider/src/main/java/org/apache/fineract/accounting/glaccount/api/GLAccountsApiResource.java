@@ -229,7 +229,8 @@ public class GLAccountsApiResource {
     @Produces("application/vnd.ms-excel")
     // @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response getJournalEntriesTemplate(@QueryParam("glAccountId") final Long glAccountId) {
-        return bulkImportWorkbookPopulatorService.getChartOfAccountsTemplate("glaccount",glAccountId);
+        return bulkImportWorkbookPopulatorService.getTemplate("glaccount",null,null,null,
+                null,null,null,null,null,null,glAccountId);
     }
 
 

@@ -771,8 +771,8 @@ public class LoansApiResource {
    			@QueryParam("productId") final Long productId, @QueryParam("fundId") final Long fundId,
    			@QueryParam("paymentTypeId") final Long paymentTypeId, @QueryParam("code") final String code) {
    		
-   		return bulkImportWorkbookPopulatorService.getLoanTemplate("loan", officeId, staffId, clientId, groupId,
-   				productId, fundId, paymentTypeId, code);
+   		return bulkImportWorkbookPopulatorService.getTemplate("loan", officeId, staffId,null,clientId, groupId,
+   				productId, fundId, paymentTypeId, code,null);
    	}
     
     @GET
@@ -782,6 +782,6 @@ public class LoansApiResource {
 	public Response getLoanRepaymentTemplate(@QueryParam("officeId") final Long officeId,
 			@QueryParam("clientId") final Long clientId, @QueryParam("fundId") final Long fundId,
 			@QueryParam("paymentTypeId") final Long paymentTypeId, @QueryParam("code") final String code) {
-		return bulkImportWorkbookPopulatorService.getLoanRepaymentTemplate("loanrepayment", officeId, clientId, fundId, paymentTypeId, code);
+		return bulkImportWorkbookPopulatorService.getTemplate("loanrepayment", officeId,null ,null,clientId,null,null,fundId, paymentTypeId, code,null);
 	}
 }

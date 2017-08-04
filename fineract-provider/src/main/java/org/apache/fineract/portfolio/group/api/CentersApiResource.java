@@ -346,6 +346,7 @@ public class CentersApiResource {
    	@Produces("application/vnd.ms-excel")
    	//@Produces(MediaType.APPLICATION_OCTET_STREAM)
    	public Response getCentersTemplate(@QueryParam("officeId")final Long officeId,@QueryParam("staffId")final Long staffId) {
-       	return bulkImportWorkbookPopulatorService.getCentersTemplate("center", officeId,staffId);
+       	return bulkImportWorkbookPopulatorService.getTemplate("center", officeId,staffId,null,null,
+                null,null,null,null,null,null);
    	}
 }

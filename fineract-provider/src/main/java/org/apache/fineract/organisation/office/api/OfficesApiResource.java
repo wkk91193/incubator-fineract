@@ -175,6 +175,8 @@ public class OfficesApiResource {
     @Produces("application/vnd.ms-excel")
     //@Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response getOfficeTemplate(@QueryParam("officeId")final Long officeId) {
-        return bulkImportWorkbookPopulatorService.getOfficesTemplate("office", officeId);
+        return bulkImportWorkbookPopulatorService.getTemplate("office", officeId,null,
+                null,null,null,null,null,null,
+                null,null);
     }
 }

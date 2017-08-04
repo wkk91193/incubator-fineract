@@ -130,13 +130,32 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
   }
 
   @Override
-  public Response getClientTemplate(final String entityType, final Long officeId, final Long staffId) {
+  public Response getTemplate(final String entityType, final Long officeId, final Long staffId,final Long centerId,
+							  final Long clientId,final Long groupId, final Long productId,final Long fundId,
+							  final Long paymentTypeId,final String code,final Long glAccountId) {
 
     WorkbookPopulator populator = null;
     final Workbook workbook = new HSSFWorkbook();
     if (entityType.trim().equalsIgnoreCase(ClientApiConstants.CLIENT_RESOURCE_NAME)) {
       populator = populateClientWorkbook(officeId, staffId);
-    } else
+    }else if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.CENTER_RESOURCE_NAME)) {
+		populator = populateCenterWorkbook(officeId, staffId);
+	}else if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.GROUP_RESOURCE_NAME)) {
+		populator = populateGroupsWorkbook(officeId, staffId,centerId,clientId);
+	}else if (entityType.trim().equalsIgnoreCase(LoanApiConstants.LOAN_RESOURCE_NAME)) {
+		populator = populateLoanWorkbook(officeId, staffId, clientId, groupId, productId, fundId, paymentTypeId,
+				code);
+	}else if (entityType.trim().equalsIgnoreCase(LoanApiConstants.LOAN_REPAYMENT_RESOURCE_NAME)) {
+		  populator = populateLoanRepaymentWorkbook(officeId, clientId, fundId, paymentTypeId, code);
+	}else if (entityType.trim().equalsIgnoreCase(JournalEntriesApiConstants.JOURNAL_ENTRY_RESOURCE_NAME)) {
+		populator = populateJournalEntriesWorkbook(officeId, glAccountId, fundId, paymentTypeId, code);
+	}else if (entityType.trim().equalsIgnoreCase(GuarantorConstants.GUARANTOR_RESOURCE_NAME)) {
+		populator = populateGuarantorWorkbook(officeId, clientId);
+	}else if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
+		populator=populateOfficeWorkbook(officeId);
+	}else if (entityType.trim().equalsIgnoreCase(GLAccountsApiConstants.GLACCOUNTS_RESOURCE_NAME)) {
+		populator=populateChartOfAccountsWorkbook(glAccountId);
+	}else
       throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
           "Unable to find requested resource");
     populator.populate(workbook);
@@ -195,23 +214,7 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
     }
     return staff;
   }
-  
-  @Override
-  public Response getCentersTemplate(final String entityType, final Long officeId, final Long staffId){
-	  
-	  WorkbookPopulator populator=null;
-	  final Workbook workbook=new HSSFWorkbook();
-	  if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.CENTER_RESOURCE_NAME)) {
-			populator=populateCenterWorkbook(officeId,staffId);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-	          "Unable to find requested resource");
-		}
-	  	populator.populate(workbook);
-	  	return buildResponse(workbook, entityType);
-  }
-  
-private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
+  private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 	 this.context.authenticatedUser().validateHasReadPermission("OFFICE");
 	 this.context.authenticatedUser().validateHasReadPermission("STAFF");
 	 List<OfficeData> offices = fetchOffices(officeId);
@@ -219,22 +222,7 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 	return new CentersWorkbookPopulator(new OfficeSheetPopulator(offices),
 	        new PersonnelSheetPopulator(staff, offices));
 }
-
-@Override
-	public Response getGroupsTemplate(String entityType, Long officeId, Long staffId,Long centerId, Long clientId){
-		WorkbookPopulator populator = null;
-		final Workbook workbook = new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(GroupingTypesApiConstants.GROUP_RESOURCE_NAME)) {
-			populator = populateGroupsWorkbook(officeId, staffId,centerId,clientId);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
-	}
-
-	private WorkbookPopulator populateGroupsWorkbook(Long officeId, Long staffId, Long centerId, Long clientId) {
+    private WorkbookPopulator populateGroupsWorkbook(Long officeId, Long staffId, Long centerId, Long clientId) {
 		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
 		this.context.authenticatedUser().validateHasReadPermission("STAFF");
 		this.context.authenticatedUser().validateHasReadPermission("CENTER");
@@ -267,22 +255,6 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		clients.add(this.clientReadPlatformService.retrieveOne(clientId));
 		}
 		return clients;
-	}
-	
-	@Override
-	public Response getLoanTemplate(String entityType, Long officeId, Long staffId, Long clientId, Long groupId,
-			Long productId, Long fundId, Long paymentTypeId, String code) {
-		WorkbookPopulator populator = null;
-		final Workbook workbook = new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(LoanApiConstants.LOAN_RESOURCE_NAME)) {
-			populator = populateLoanWorkbook(officeId, staffId, clientId, groupId, productId, fundId, paymentTypeId,
-					code);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
 	}
 
 	private WorkbookPopulator populateLoanWorkbook(Long officeId, Long staffId, Long clientId, Long groupId,
@@ -365,21 +337,6 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 
 		return groups;
 	}
-	
-	@Override
-	public Response getLoanRepaymentTemplate(String entityType, Long officeId, Long clientId, Long fundId,
-			Long paymentTypeId, String code) {
-		WorkbookPopulator populator = null;
-		final Workbook workbook = new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(LoanApiConstants.LOAN_REPAYMENT_RESOURCE_NAME)) {
-			populator = populateLoanRepaymentWorkbook(officeId, clientId, fundId, paymentTypeId, code);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
-	}
 
 	private WorkbookPopulator populateLoanRepaymentWorkbook(Long officeId, Long clientId, Long fundId,
 			Long paymentTypeId, String code) {
@@ -402,21 +359,6 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 	private List<LoanAccountData> fetchLoanAccounts() {
 		List<LoanAccountData> loanaccounts = (List<LoanAccountData>) loanReadPlatformService.retrieveAllLoans();
 		return loanaccounts;
-	}
-	
-	@Override
-	public Response getJournalEntriesTemplate(String entityType, Long officeId, Long glAccountId, Long fundId,
-			Long paymentTypeId, String code) {
-		WorkbookPopulator populator = null;
-		final Workbook workbook = new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(JournalEntriesApiConstants.JOURNAL_ENTRY_RESOURCE_NAME)) {
-			populator = populateJournalEntriesWorkbook(officeId, glAccountId, fundId, paymentTypeId, code);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
 	}
 
 	private WorkbookPopulator populateJournalEntriesWorkbook(Long officeId, Long glAccountId, Long fundId,
@@ -447,20 +389,6 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 
 		return glaccounts;
 	}
-	
-	@Override
-	public Response getGuarantorTemplate(String entityType, Long officeId, Long clientId) {
-		WorkbookPopulator populator = null;
-		final Workbook workbook = new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(GuarantorConstants.GUARANTOR_RESOURCE_NAME)) {
-			populator = populateGuarantorWorkbook(officeId, clientId);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
-	}
 
 	private WorkbookPopulator populateGuarantorWorkbook(Long officeId, Long clientId) {
 		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
@@ -478,38 +406,10 @@ private WorkbookPopulator populateCenterWorkbook(Long officeId,Long staffId){
 		return savingsaccounts;
 	}
 
-	@Override
-	public Response getOfficesTemplate(final String entityType, final Long officeId) {
-		WorkbookPopulator populator=null;
-		final Workbook workbook=new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
-			populator=populateOfficeWorkbook(officeId);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
-	}
-
 	private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
 		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
 		List<OfficeData> offices = fetchOffices(officeId);
 		return new OfficeWorkbookPopulator(offices);
-	}
-
-	@Override
-	public Response getChartOfAccountsTemplate(String entityType,Long glAccountId) {
-		WorkbookPopulator populator=null;
-		final Workbook workbook=new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(GLAccountsApiConstants.GLACCOUNTS_RESOURCE_NAME)) {
-			populator=populateChartOfAccountsWorkbook(glAccountId);
-		} else {
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		}
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
 	}
 
 	private WorkbookPopulator populateChartOfAccountsWorkbook(Long glAccountId) {

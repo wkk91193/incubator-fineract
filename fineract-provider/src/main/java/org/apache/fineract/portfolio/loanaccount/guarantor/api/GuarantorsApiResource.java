@@ -230,6 +230,8 @@ public class GuarantorsApiResource {
 	// @Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public Response getGuarantorTemplate(@QueryParam("officeId") final Long officeId,
 			@QueryParam("clientId") final Long clientId) {
-		return bulkImportWorkbookPopulatorService.getGuarantorTemplate("guarantor", officeId, clientId);
+		return bulkImportWorkbookPopulatorService.getTemplate("guarantor", officeId,null ,
+                null,clientId,null,null,null,null,null,
+                null);
 	}
 }
