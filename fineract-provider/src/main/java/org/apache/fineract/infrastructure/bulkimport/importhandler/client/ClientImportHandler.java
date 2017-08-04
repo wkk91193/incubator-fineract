@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClientImportHandler extends AbstractImportHandler {
+	
     private static final int FIRST_NAME_COL = 0;
     private static final int FULL_NAME_COL = 0;
     private static final int LAST_NAME_COL = 1;
@@ -104,7 +105,7 @@ public class ClientImportHandler extends AbstractImportHandler {
 
 
     @Override
-    public void Upload(PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+    public void upload(PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
         Sheet clientSheet=workbook.getSheet("Clients");
         for (ClientData client: clients) {
             try {

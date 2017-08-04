@@ -18,20 +18,29 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.service;
 
-import com.sun.jersey.core.header.FormDataContentDisposition;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.ws.rs.core.Response;
+
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.data.ImportFormatType;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandler;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.client.ClientImportHandler;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.util.IOUtils;
+import org.apache.tika.Tika;
+import org.apache.tika.io.TikaInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.io.InputStream;
+import com.google.common.io.Files;
+import com.sun.jersey.core.header.FormDataContentDisposition;
 
 @Service
 public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService {
@@ -43,8 +52,23 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
     }
 
     @Override
-    public Response postClientTemplate(String entityType , InputStream inputStream,FormDataContentDisposition fileDetail) {
+    public Response importWorkbook(String entityType , InputStream inputStream, FormDataContentDisposition fileDetail) {
         try {
+        		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        		IOUtils.copy(inputStream, baos);
+            final byte[] bytes = baos.toByteArray();
+            InputStream clonedInputStream = new ByteArrayInputStream(bytes);
+        		final Tika tika = new Tika();
+            final TikaInputStream tikaInputStream = TikaInputStream.get(clonedInputStream);
+            final String fileType = tika.detect(tikaInputStream);
+            final String fileExtension = Files.getFileExtension(fileDetail.getFileName()).toLowerCase();
+            ImportFormatType format = ImportFormatType.of(fileExtension);
+            if (format.name().equalsIgnoreCase(fileType)) {
+            		throw new GeneralPlatformDomainRuleException("error.msg.invalid.file.extension",
+            				"Uploaded file extension is not recognized.");
+            	}
+        	
+        	
             Workbook workbook = new HSSFWorkbook(inputStream);
             ImportHandler importHandler=null;
             if (entityType.trim().equalsIgnoreCase(ClientApiConstants.CLIENT_RESOURCE_NAME)) {
@@ -54,7 +78,7 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
                         "Unable to find requested resource");
             }
             importHandler.readExcelFile();
-            importHandler.Upload(commandsSourceWritePlatformService);
+            importHandler.upload(commandsSourceWritePlatformService);
         }catch (IOException ex){
             throw new GeneralPlatformDomainRuleException("error.msg.io.exception","IO exception occured with "+fileDetail.getFileName()+" "+ex.getMessage());
         }
