@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.bulkimport.importhandler;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 
 public interface ImportHandler {
+	
     public void readExcelFile();
-    public void Upload(PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService);
+    public void upload(PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService);
 }
