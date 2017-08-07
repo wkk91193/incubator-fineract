@@ -21,6 +21,7 @@ package org.apache.fineract.organisation.office.data;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.joda.time.LocalDate;
 
@@ -40,6 +41,34 @@ public class OfficeData implements Serializable {
     @SuppressWarnings("unused")
     private final Collection<OfficeData> allowedParents;
 
+    //import fields
+    private transient Integer rowIndex;
+    private Locale locale;
+    private String dateFormat;
+
+    public OfficeData(String name, Long parentId,LocalDate openingDate,String externalId,Integer rowIndex) {
+
+        this.name = name;
+        this.externalId = externalId;
+        this.openingDate = openingDate;
+        this.parentId = parentId;
+        this.locale = Locale.ENGLISH;
+        this.dateFormat = "yyyy-MM-dd";
+        this.rowIndex = rowIndex;
+        this.nameDecorated = null;
+        this.id = null;
+        this.hierarchy = null;
+        this.parentName = null;
+        this.allowedParents = null;
+    }
+
+    public Integer getRowIndex() {
+        return rowIndex;
+    }
+
+    public Long getId() {
+        return id;
+    }
     public static OfficeData dropdown(final Long id, final String name, final String nameDecorated) {
         return new OfficeData(id, name, nameDecorated, null, null, null, null, null, null);
     }
