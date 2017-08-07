@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.organisation.office.api;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,11 +35,16 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import com.sun.jersey.core.header.FormDataContentDisposition;
+import com.sun.jersey.multipart.FormDataParam;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
+import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
@@ -70,16 +76,22 @@ public class OfficesApiResource {
     private final DefaultToApiJsonSerializer<OfficeData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService;
+    private final BulkImportWorkbookService bulkImportWorkbookService;
 
     @Autowired
     public OfficesApiResource(final PlatformSecurityContext context, final OfficeReadPlatformService readPlatformService,
             final DefaultToApiJsonSerializer<OfficeData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+            final  BulkImportWorkbookPopulatorService bulkImportWorkbookPopulatorService,
+            final BulkImportWorkbookService bulkImportWorkbookService) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.bulkImportWorkbookPopulatorService=bulkImportWorkbookPopulatorService;
+        this.bulkImportWorkbookService=bulkImportWorkbookService;
     }
 
     @GET
@@ -164,5 +176,22 @@ public class OfficesApiResource {
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @GET
+    @Path("bulkimporttemplate")
+    @Produces("application/vnd.ms-excel")
+    //@Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response getOfficeTemplate(@QueryParam("officeId")final Long officeId) {
+        return bulkImportWorkbookPopulatorService.getTemplate("office", officeId,null,
+                null,null,null,null,null,null,null,null);
+    }
+
+    @POST
+    @Path("bulkuploadtemplate")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response postOfficeTemplate(@FormDataParam("file") InputStream uploadedInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileDetail){
+        return bulkImportWorkbookService.importWorkbook("office", uploadedInputStream,fileDetail);
     }
 }
