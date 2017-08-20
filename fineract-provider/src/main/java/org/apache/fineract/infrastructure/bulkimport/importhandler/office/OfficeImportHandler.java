@@ -22,6 +22,8 @@ import com.google.gson.GsonBuilder;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.constants.OfficeConstants;
+import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.AbstractImportHandler;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.helper.DateSerializer;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -36,12 +38,6 @@ public class OfficeImportHandler extends AbstractImportHandler {
     private final List<OfficeData> offices;
     private final Workbook workbook;
 
-    private static final int OFFICE_NAME=0;
-    private static final int PARENT_OFFICE=1;
-    private static final int PARENT_OFFICE_ID=2;
-    private static final int OPENED_ON_DATE=3;
-    private static final int  EXTERNAL_ID=4;
-    private static final int STATUS_COL=5;
 
     public OfficeImportHandler(Workbook workbook) {
         this.offices=new ArrayList<OfficeData>();
@@ -50,56 +46,53 @@ public class OfficeImportHandler extends AbstractImportHandler {
 
     @Override
     public void readExcelFile() {
-        Sheet officeSheet=workbook.getSheet("Offices");
+        Sheet officeSheet=workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
         Integer noOfEntries=getNumberOfRows(officeSheet,0);
         for (int rowIndex=1;rowIndex<noOfEntries;rowIndex++){
             Row row;
-            try {
                 row=officeSheet.getRow(rowIndex);
-                if (isNotImported(row,STATUS_COL)){
+                if (isNotImported(row, OfficeConstants.STATUS_COL)){
                     offices.add(readOffice(row));
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 
     private OfficeData readOffice(Row row) {
-        String officeName =readAsString(OFFICE_NAME,row);
-        Long parentId=readAsLong(PARENT_OFFICE_ID,row);
-        LocalDate openedDate=readAsDate(OPENED_ON_DATE,row);
-        String externalId=readAsLong(EXTERNAL_ID,row).toString();
+        String officeName =readAsString(OfficeConstants.OFFICE_NAME_COL,row);
+        Long parentId=readAsLong(OfficeConstants.PARENT_OFFICE_ID_COL,row);
+        LocalDate openedDate=readAsDate(OfficeConstants.OPENED_ON_COL,row);
+        String externalId=readAsLong(OfficeConstants.EXTERNAL_ID_COL,row).toString();
         return new OfficeData(officeName,parentId,openedDate,externalId,row.getRowNum());
     }
 
     @Override
     public void Upload(PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
-        Sheet clientSheet=workbook.getSheet("Offices");
+        Sheet clientSheet=workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(LocalDate.class, new DateSerializer());
         for (OfficeData office: offices) {
             try {
-                GsonBuilder gsonBuilder = new GsonBuilder();
-                String payload=gsonBuilder.registerTypeAdapter(LocalDate.class, new DateSerializer()).create().toJson(office);
+                String payload=gsonBuilder.create().toJson(office);
                 final CommandWrapper commandRequest = new CommandWrapperBuilder() //
                         .createOffice() //
                         .withJson(payload) //
                         .build(); //
                 final CommandProcessingResult result = commandsSourceWritePlatformService.logCommandSource(commandRequest);
-                Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(STATUS_COL);
-                statusCell.setCellValue("Imported");
+                Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(OfficeConstants.STATUS_COL);
+                statusCell.setCellValue(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
                 statusCell.setCellStyle(getCellStyle(workbook, IndexedColors.LIGHT_GREEN));
             } catch (RuntimeException e) {
                 e.printStackTrace();
                 String message="";
                 if (e.getMessage()!=null)
                  message = parseStatus(e.getMessage());
-                Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(STATUS_COL);
+                Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(OfficeConstants.STATUS_COL);
                 statusCell.setCellValue(message);
                 statusCell.setCellStyle(getCellStyle(workbook, IndexedColors.RED));
 
             }
         }
-        clientSheet.setColumnWidth(STATUS_COL, 15000);
-        writeString(STATUS_COL, clientSheet.getRow(0), "Status");
+        clientSheet.setColumnWidth(OfficeConstants.STATUS_COL, TemplatePopulateImportConstants.SMALL_COL_SIZE);
+        writeString(OfficeConstants.STATUS_COL, clientSheet.getRow(0), TemplatePopulateImportConstants.STATUS_COLUMN_HEADER_NAME);
     }
 }

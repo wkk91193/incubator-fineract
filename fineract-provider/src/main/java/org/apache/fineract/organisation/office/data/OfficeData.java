@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
 import org.joda.time.LocalDate;
 
 /**
@@ -43,7 +44,7 @@ public class OfficeData implements Serializable {
 
     //import fields
     private transient Integer rowIndex;
-    private Locale locale;
+    private String locale;
     private String dateFormat;
 
     public OfficeData(String name, Long parentId,LocalDate openingDate,String externalId,Integer rowIndex) {
@@ -52,8 +53,8 @@ public class OfficeData implements Serializable {
         this.externalId = externalId;
         this.openingDate = openingDate;
         this.parentId = parentId;
-        this.locale = Locale.ENGLISH;
-        this.dateFormat = "yyyy-MM-dd";
+        this.locale = TemplatePopulateImportConstants.LOCALE;
+        this.dateFormat = TemplatePopulateImportConstants.DATE_FORMAT;
         this.rowIndex = rowIndex;
         this.nameDecorated = null;
         this.id = null;

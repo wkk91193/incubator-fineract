@@ -22,10 +22,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
 import org.apache.poi.ss.usermodel.*;
 import org.joda.time.LocalDate;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
@@ -44,54 +46,52 @@ public abstract class AbstractImportHandler implements ImportHandler {
     }
 
     protected boolean isNotImported(Row row, int statusColumn) {
-        return !readAsString(statusColumn, row).equals("Imported");
+        return !readAsString(statusColumn, row).equals(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
     }
 
     protected Long readAsLong(int colIndex, Row row) {
-        try {
             Cell c = row.getCell(colIndex);
             if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
                 return null;
             FormulaEvaluator eval = row.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
             if(c.getCellType() == Cell.CELL_TYPE_FORMULA) {
-                CellValue val = null;
-                try {
-                    val = eval.evaluate(c);
-                } catch (NullPointerException npe) {
-                    return null;
+                if(eval!=null) {
+                    CellValue val = eval.evaluate(c);
+                    return ((Double) val.getNumberValue()).longValue();
                 }
-                return ((Double) val.getNumberValue()).longValue();
             }
-            return ((Double) c.getNumericCellValue()).longValue();
-        } catch (RuntimeException re) {
-            return Long.parseLong(row.getCell(colIndex).getStringCellValue());
-        }
+            else if (c.getCellType()==Cell.CELL_TYPE_NUMERIC){
+                return ((Double) c.getNumericCellValue()).longValue();
+            }
+            else {
+                return Long.parseLong(row.getCell(colIndex).getStringCellValue());
+            }
+            return null;
     }
 
 
     protected String readAsString(int colIndex, Row row) {
-        try {
+
             Cell c = row.getCell(colIndex);
             if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
                 return "";
             FormulaEvaluator eval = row.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
             if(c.getCellType() == Cell.CELL_TYPE_FORMULA) {
-                CellValue val = null;
-                try {
-                    val = eval.evaluate(c);
-                } catch(NullPointerException npe) {
-                    return "";
-                }
-                String res = trimEmptyDecimalPortion(val.getStringValue());
+                    if (eval!=null) {
+                        CellValue val = eval.evaluate(c);
+                        String res = trimEmptyDecimalPortion(val.getStringValue());
+                        return res.trim();
+                    }
+            }else if(c.getCellType()==Cell.CELL_TYPE_STRING) {
+                String res = trimEmptyDecimalPortion(c.getStringCellValue().trim());
                 return res.trim();
+
+            }else  {
+                return ((Double) row.getCell(colIndex).getNumericCellValue()).intValue() + "";
             }
-            String res = trimEmptyDecimalPortion(c.getStringCellValue().trim());
-            return res.trim();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ((Double)row.getCell(colIndex).getNumericCellValue()).intValue() + "";
-        }
+          return null;
     }
+
 
     private String trimEmptyDecimalPortion(String result) {
         if(result != null && result.endsWith(".0"))
@@ -106,16 +106,18 @@ public abstract class AbstractImportHandler implements ImportHandler {
             if(c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
                 return null;
 
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            DateFormat dateFormat = new SimpleDateFormat(TemplatePopulateImportConstants.DATE_FORMAT);
             Date date=dateFormat.parse(dateFormat.format(c.getDateCellValue()));
             LocalDate localDate=new LocalDate(date);
             return localDate;
-        }  catch  (Exception e) {
+        }  catch  (ParseException e) {
+            e.printStackTrace();
             return null;
         }
     }
 
     protected void writeString(int colIndex, Row row, String value) {
+        if(value!=null)
         row.createCell(colIndex).setCellValue(value);
     }
 
@@ -133,8 +135,8 @@ public abstract class AbstractImportHandler implements ImportHandler {
         Iterator<JsonElement> iterator = array.iterator();
         while(iterator.hasNext()) {
             JsonObject json = iterator.next().getAsJsonObject();
-            String parameterName = json.get("parameterName").toString();
-            String defaultUserMessage = json.get("defaultUserMessage").toString();
+            String parameterName = json.get("parameterName").getAsString();
+            String defaultUserMessage = json.get("defaultUserMessage").getAsString();
             message = message.append(parameterName.substring(1, parameterName.length() - 1) + ":" + defaultUserMessage.substring(1, defaultUserMessage.length() - 1) + "\t");
         }
         return message.toString();

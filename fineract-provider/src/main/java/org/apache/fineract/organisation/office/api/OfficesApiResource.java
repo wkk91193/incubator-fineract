@@ -181,17 +181,16 @@ public class OfficesApiResource {
     @GET
     @Path("bulkimporttemplate")
     @Produces("application/vnd.ms-excel")
-    //@Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response getOfficeTemplate(@QueryParam("officeId")final Long officeId) {
-        return bulkImportWorkbookPopulatorService.getTemplate("office", officeId,null,
+    public Response getOfficeTemplate(@QueryParam("entityType")final String entityType,@QueryParam("officeId")final Long officeId) {
+        return bulkImportWorkbookPopulatorService.getTemplate(entityType, officeId,null,
                 null,null,null,null,null,null,null,null);
     }
 
     @POST
     @Path("bulkuploadtemplate")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response postOfficeTemplate(@FormDataParam("file") InputStream uploadedInputStream,
+    public Response postOfficeTemplate(@QueryParam("entityType")final String entityType,@FormDataParam("file") InputStream uploadedInputStream,
             @FormDataParam("file") FormDataContentDisposition fileDetail){
-        return bulkImportWorkbookService.importWorkbook("office", uploadedInputStream,fileDetail);
+        return bulkImportWorkbookService.importWorkbook(entityType, uploadedInputStream,fileDetail);
     }
 }

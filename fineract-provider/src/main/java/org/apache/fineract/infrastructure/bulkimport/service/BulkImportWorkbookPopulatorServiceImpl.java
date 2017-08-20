@@ -58,19 +58,23 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 	public Response getTemplate(final String entityType, final Long officeId, final Long staffId,final Long centerId,
 			final Long clientId,final Long groupId, final Long productId,final Long fundId,
 			final Long paymentTypeId,final String code,final Long glAccountId) {
-
-		WorkbookPopulator populator = null;
-		final Workbook workbook = new HSSFWorkbook();
-		if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
-			populator = populateOfficeWorkbook(officeId);
-		} else
-			throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-					"Unable to find requested resource");
-		populator.populate(workbook);
-		return buildResponse(workbook, entityType);
+		if (entityType!=null) {
+			WorkbookPopulator populator = null;
+			final Workbook workbook = new HSSFWorkbook();
+			if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
+				populator = populateOfficeWorkbook(officeId);
+			} else
+				throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+						"Unable to find requested resource");
+			populator.populate(workbook);
+			return buildResponse(workbook, entityType);
+		}else {
+			throw new GeneralPlatformDomainRuleException("error.msg.entityType.null",
+					"Given entityType null");
+		}
 	}
 	private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
-		this.context.authenticatedUser().validateHasReadPermission("OFFICE");
+		this.context.authenticatedUser().validateHasReadPermission(OfficeApiConstants.OFFICE_RESOURCE_NAME);
 		List<OfficeData> offices = fetchOffices(officeId);
 		return new OfficeWorkbookPopulator(offices);
 	}

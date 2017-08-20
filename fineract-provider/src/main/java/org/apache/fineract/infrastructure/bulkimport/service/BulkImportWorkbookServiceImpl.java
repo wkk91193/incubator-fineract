@@ -22,8 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import javax.ws.rs.core.Response;
 
@@ -54,37 +52,41 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
     }
 
     @Override
-    public Response importWorkbook(String entityType , InputStream inputStream, FormDataContentDisposition fileDetail) {
-        try {
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            IOUtils.copy(inputStream, baos);
-            final byte[] bytes = baos.toByteArray();
-            InputStream clonedInputStream = new ByteArrayInputStream(bytes);
-            InputStream clonedInputStreamWorkbook =new ByteArrayInputStream(bytes);
-            final Tika tika = new Tika();
-            final TikaInputStream tikaInputStream = TikaInputStream.get(clonedInputStream);
-            final String fileType = tika.detect(tikaInputStream);
-            final String fileExtension = Files.getFileExtension(fileDetail.getFileName()).toLowerCase();
-            ImportFormatType format = ImportFormatType.of(fileExtension);
-            if (format.name().equalsIgnoreCase(fileType)) {
-                throw new GeneralPlatformDomainRuleException("error.msg.invalid.file.extension",
-                        "Uploaded file extension is not recognized.");
-            }
+    public Response importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail) {
+        if (entityType != null && inputStream != null && fileDetail != null) {
+            try {
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                IOUtils.copy(inputStream, baos);
+                final byte[] bytes = baos.toByteArray();
+                InputStream clonedInputStream = new ByteArrayInputStream(bytes);
+                InputStream clonedInputStreamWorkbook = new ByteArrayInputStream(bytes);
+                final Tika tika = new Tika();
+                final TikaInputStream tikaInputStream = TikaInputStream.get(clonedInputStream);
+                final String fileType = tika.detect(tikaInputStream);
+                final String fileExtension = Files.getFileExtension(fileDetail.getFileName()).toLowerCase();
+                ImportFormatType format = ImportFormatType.of(fileExtension);
+                if (format.name().equalsIgnoreCase(fileType)) {
+                    throw new GeneralPlatformDomainRuleException("error.msg.invalid.file.extension",
+                            "Uploaded file extension is not recognized.");
+                }
 
-            Workbook workbook = new HSSFWorkbook(clonedInputStreamWorkbook);
-            ImportHandler importHandler=null;
-            if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
-                importHandler = new OfficeImportHandler(workbook);
-            }else {
-                throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
-                        "Unable to find requested resource");
+                Workbook workbook = new HSSFWorkbook(clonedInputStreamWorkbook);
+                ImportHandler importHandler = null;
+                if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
+                    importHandler = new OfficeImportHandler(workbook);
+                } else {
+                    throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
+                            "Unable to find requested resource");
+                }
+                importHandler.readExcelFile();
+                importHandler.Upload(commandsSourceWritePlatformService);
+                return Response.ok(fileDetail.getFileName() + " uploaded successfully").build();
+            } catch (IOException ex) {
+                throw new GeneralPlatformDomainRuleException("error.msg.io.exception", "IO exception occured with " + fileDetail.getFileName() + " " + ex.getMessage());
             }
-            importHandler.readExcelFile();
-            importHandler.Upload(commandsSourceWritePlatformService);
-        }catch (IOException ex){
-            throw new GeneralPlatformDomainRuleException("error.msg.io.exception","IO exception occured with "+fileDetail.getFileName()+" "+ex.getMessage());
+        } else {
+            throw new GeneralPlatformDomainRuleException("error.msg.entityType.null",
+                    "Given entityType null or file not found");
         }
-        return Response.ok(fileDetail.getFileName()+" uploaded successfully").build();
     }
-
 }
