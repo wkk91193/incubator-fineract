@@ -39,15 +39,15 @@ public class OfficeWorkbookPopulator extends AbstractWorkbookPopulator {
     }
 
     @Override
-    public void populate(Workbook workbook) {
+    public void populate(final Workbook workbook, final String dateFormat) {
         Sheet officeSheet=workbook.createSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
         setLayout(officeSheet);
         setLookupTable(officeSheet);
-        setRules(officeSheet);
+        setRules(officeSheet, dateFormat);
         setDefaults(officeSheet);
     }
 
-    private void setLookupTable(Sheet officeSheet) {
+    private void setLookupTable(final Sheet officeSheet) {
         int rowIndex=1;
         for (OfficeData office:offices) {
             Row row=officeSheet.createRow(rowIndex);
@@ -57,7 +57,7 @@ public class OfficeWorkbookPopulator extends AbstractWorkbookPopulator {
         }
     }
 
-    private void setLayout(Sheet worksheet){
+    private void setLayout(final Sheet worksheet){
         Row rowHeader=worksheet.createRow(0);
         worksheet.setColumnWidth(OfficeConstants.OFFICE_NAME_COL, TemplatePopulateImportConstants.SMALL_COL_SIZE);
         worksheet.setColumnWidth(OfficeConstants.PARENT_OFFICE_NAME_COL,TemplatePopulateImportConstants.SMALL_COL_SIZE);
@@ -76,30 +76,30 @@ public class OfficeWorkbookPopulator extends AbstractWorkbookPopulator {
         writeString(OfficeConstants.LOOKUP_OFFICE_ID_COL,rowHeader, OfficeConstants.LOOKUP_OFFICE_ID_COL_HEADER_NAME);
     }
 
-    private void setRules(Sheet workSheet){
+    private void setRules(final Sheet workSheet, final String dateFormat){
         CellRangeAddressList parentOfficeNameRange = new  CellRangeAddressList(1, SpreadsheetVersion.EXCEL97.getLastRowIndex(),OfficeConstants. PARENT_OFFICE_NAME_COL, OfficeConstants. PARENT_OFFICE_NAME_COL);
-        CellRangeAddressList OpenedOndateRange = new CellRangeAddressList(1, SpreadsheetVersion.EXCEL97.getLastRowIndex(),OfficeConstants. OPENED_ON_COL,OfficeConstants. OPENED_ON_COL);
+        CellRangeAddressList openedOndateRange = new CellRangeAddressList(1, SpreadsheetVersion.EXCEL97.getLastRowIndex(),OfficeConstants. OPENED_ON_COL,OfficeConstants. OPENED_ON_COL);
 
         DataValidationHelper validationHelper=new HSSFDataValidationHelper((HSSFSheet) workSheet);
         setNames(workSheet);
 
         DataValidationConstraint parentOfficeNameConstraint=validationHelper.createFormulaListConstraint("Office");
-        DataValidationConstraint openDateConstraint=validationHelper.createDateConstraint(DataValidationConstraint.OperatorType.LESS_OR_EQUAL,"=TODAY()",null,"dd/mm/yy");
+        DataValidationConstraint openDateConstraint=validationHelper.createDateConstraint(DataValidationConstraint.OperatorType.LESS_OR_EQUAL,"=TODAY()",null, dateFormat);
 
         DataValidation parentOfficeValidation=validationHelper.createValidation(parentOfficeNameConstraint,parentOfficeNameRange);
-        DataValidation openDateValidation=validationHelper.createValidation(openDateConstraint,OpenedOndateRange);
+        DataValidation openDateValidation=validationHelper.createValidation(openDateConstraint, openedOndateRange);
 
         workSheet.addValidationData(parentOfficeValidation);
         workSheet.addValidationData(openDateValidation);
     }
 
-    private void setNames(Sheet workSheet) {
+    private void setNames(final Sheet workSheet) {
         Workbook officeWorkbook=workSheet.getWorkbook();
         Name parentOffice=officeWorkbook.createName();
         parentOffice.setNameName("Office");
         parentOffice.setRefersToFormula("Offices!$H$2:$H$"+(offices.size()+1));
     }
-    private void setDefaults(Sheet worksheet) {
+    private void setDefaults(final Sheet worksheet) {
         try {
             for (Integer rowNo = 1; rowNo < 3000; rowNo++) {
                 Row row = worksheet.getRow(rowNo);

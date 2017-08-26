@@ -25,5 +25,6 @@ import java.io.InputStream;
 
 public interface BulkImportWorkbookService {
 
-    public Response importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail);
+    public Response importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail,
+    		final String locale, final String dateFormat);
 }
