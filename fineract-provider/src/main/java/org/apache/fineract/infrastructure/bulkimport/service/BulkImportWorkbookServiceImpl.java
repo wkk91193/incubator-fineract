@@ -22,14 +22,22 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLConnection;
 
-import javax.ws.rs.core.Response;
-
-import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.data.BulkImportEvent;
+import org.apache.fineract.infrastructure.bulkimport.data.GlobalEntityType;
 import org.apache.fineract.infrastructure.bulkimport.data.ImportFormatType;
-import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandler;
+import org.apache.fineract.infrastructure.bulkimport.domain.ImportDocument;
+import org.apache.fineract.infrastructure.bulkimport.domain.ImportDocumentRepository;
+import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandlerUtils;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
-import org.apache.fineract.organisation.office.api.OfficeApiConstants;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
+import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
+import org.apache.fineract.infrastructure.documentmanagement.domain.DocumentRepository;
+import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformService;
+import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformServiceJpaRepositoryImpl.DOCUMENT_MANAGEMENT_ENTITY;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.util.IOUtils;
@@ -45,20 +53,29 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 @Service
 public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService {
 	
-    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final ApplicationContext applicationContext;
+    private final PlatformSecurityContext securityContext;
+    private final DocumentWritePlatformService documentWritePlatformService;
+    private final DocumentRepository documentRepository;
+    private final ImportDocumentRepository importDocumentRepository;
 
     @Autowired
-    public BulkImportWorkbookServiceImpl(final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-    		final ApplicationContext applicationContext) {
-        this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+    public BulkImportWorkbookServiceImpl(final ApplicationContext applicationContext,
+    		final PlatformSecurityContext securityContext,
+    		final DocumentWritePlatformService documentWritePlatformService,
+    		final DocumentRepository documentRepository,
+    		final ImportDocumentRepository importDocumentRepository) {
         this.applicationContext = applicationContext;
+        this.securityContext = securityContext;
+        this.documentWritePlatformService = documentWritePlatformService;
+        this.documentRepository = documentRepository;
+        this.importDocumentRepository = importDocumentRepository;
     }
 
     @Override
-    public Response importWorkbook(final String entityType, final InputStream inputStream,
+    public Long importWorkbook(final String entity, final InputStream inputStream,
     		final FormDataContentDisposition fileDetail, final String locale, final String dateFormat) {
-        if (entityType != null && inputStream != null && fileDetail != null) {
+        if (entity != null && inputStream != null && fileDetail != null) {
             try {
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 IOUtils.copy(inputStream, baos);
@@ -69,28 +86,56 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
                 final TikaInputStream tikaInputStream = TikaInputStream.get(clonedInputStream);
                 final String fileType = tika.detect(tikaInputStream);
                 final String fileExtension = Files.getFileExtension(fileDetail.getFileName()).toLowerCase();
-                ImportFormatType format = ImportFormatType.from(fileExtension);
-                if (format.name().equalsIgnoreCase(fileType)) {
+                if (!fileType.contains("msoffice")) {
                     throw new GeneralPlatformDomainRuleException("error.msg.invalid.file.extension",
                             "Uploaded file extension is not recognized.");
                 }
 
                 Workbook workbook = new HSSFWorkbook(clonedInputStreamWorkbook);
-                ImportHandler importHandler = null;
-                if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
-                    importHandler = this.applicationContext.getBean("officeImportHandler", ImportHandler.class);
+                final GlobalEntityType entityType;
+                int primaryColumn;
+                if (entity.trim().equalsIgnoreCase(GlobalEntityType.OFFICES.toString())) {
+                		entityType = GlobalEntityType.OFFICES;
+                		primaryColumn = 0;
                 } else {
                     throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
                             "Unable to find requested resource");
                 }
-                importHandler.process(workbook, locale, dateFormat);
-                return Response.ok(fileDetail.getFileName() + " uploaded successfully").build();
+                return publishEvent(primaryColumn, fileDetail, clonedInputStreamWorkbook, entityType,
+                		workbook, locale, dateFormat);
+                
+                
             } catch (IOException ex) {
-                throw new GeneralPlatformDomainRuleException("error.msg.io.exception", "IO exception occured with " + fileDetail.getFileName() + " " + ex.getMessage());
+                throw new GeneralPlatformDomainRuleException("error.msg.io.exception", "IO exception occured with " 
+                		+ fileDetail.getFileName() + " " + ex.getMessage());
             }
         } else {
             throw new GeneralPlatformDomainRuleException("error.msg.entityType.null",
                     "Given entityType null or file not found");
         }
+    }
+    
+    private Long publishEvent(final Integer primaryColumn,
+    		final FormDataContentDisposition fileDetail, final InputStream clonedInputStreamWorkbook,
+    		final GlobalEntityType entityType, final Workbook workbook,
+    		final String locale, final String dateFormat) {
+    	
+    		final String fileName = fileDetail.getFileName();
+        final Long documentId = this.documentWritePlatformService.createInternalDocument(
+        		DOCUMENT_MANAGEMENT_ENTITY.IMPORT.name(),
+        		this.securityContext.authenticatedUser().getId(), null, clonedInputStreamWorkbook,
+        		URLConnection.guessContentTypeFromName(fileName), fileName, null, fileName);
+        final Document document = this.documentRepository.findOne(documentId);
+        
+        final ImportDocument importDocument = ImportDocument.instance(document,
+        		DateUtils.getLocalDateOfTenant(), entityType.getValue(),
+        		this.securityContext.authenticatedUser(),
+        		ImportHandlerUtils.getNumberOfRows(workbook.getSheetAt(0),
+        				primaryColumn));
+        this.importDocumentRepository.saveAndFlush(importDocument);
+        BulkImportEvent event = BulkImportEvent.instance(ThreadLocalContextUtil.getTenant()
+        		.getTenantIdentifier(), workbook, importDocument.getId(), locale, dateFormat);
+        applicationContext.publishEvent(event);
+        return importDocument.getId();
     }
 }

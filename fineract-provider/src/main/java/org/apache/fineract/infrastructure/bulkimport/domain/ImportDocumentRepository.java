@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.infrastructure.bulkimport.importhandler;
+package org.apache.fineract.infrastructure.bulkimport.domain;
 
-import org.apache.fineract.infrastructure.bulkimport.data.Count;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface ImportHandler {
-	
-	public Count process(Workbook workbook, String locale, String dateFormat);
-	
+public interface ImportDocumentRepository 
+extends JpaRepository<ImportDocument, Long>, JpaSpecificationExecutor<ImportDocument> {
+    // no added behaviour
 }
+

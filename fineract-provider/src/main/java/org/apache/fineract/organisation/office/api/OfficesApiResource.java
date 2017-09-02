@@ -43,6 +43,7 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.bulkimport.data.GlobalEntityType;
 import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookPopulatorService;
 import org.apache.fineract.infrastructure.bulkimport.service.BulkImportWorkbookService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
@@ -184,17 +185,18 @@ public class OfficesApiResource {
     public Response getOfficeTemplate(@QueryParam("locale") final String locale,
     			@QueryParam("dateFormat") final String dateFormat) {
         return this.bulkImportWorkbookPopulatorService.getTemplate(OfficeApiConstants.OFFICE_RESOURCE_NAME,
-        			this.context.authenticatedUser().getOffice().getId(), null,
+        			null, null,
                 null,null,null,null,null,null,null,null, locale, dateFormat);
     }
 
     @POST
     @Path("uploadtemplate")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response postOfficeTemplate(@FormDataParam("file") InputStream uploadedInputStream,
+    public String postOfficeTemplate(@FormDataParam("file") InputStream uploadedInputStream,
             @FormDataParam("file") FormDataContentDisposition fileDetail,
             @FormDataParam("locale") final String locale, @FormDataParam("dateFormat") final String dateFormat){
-        return this.bulkImportWorkbookService.importWorkbook(OfficeApiConstants.OFFICE_RESOURCE_NAME,
+        final Long importDocumentId = this.bulkImportWorkbookService.importWorkbook(GlobalEntityType.OFFICES.name(),
         		uploadedInputStream,fileDetail, locale, dateFormat);
+        return this.toApiJsonSerializer.serialize(importDocumentId);
     }
 }

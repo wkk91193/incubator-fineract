@@ -16,13 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.infrastructure.bulkimport.importhandler;
+package org.apache.fineract.infrastructure.bulkimport.data;
 
-import org.apache.fineract.infrastructure.bulkimport.data.Count;
-import org.apache.poi.ss.usermodel.Workbook;
+public class Count {
 
-public interface ImportHandler {
+	private Integer successCount;
+	private Integer errorCount;
 	
-	public Count process(Workbook workbook, String locale, String dateFormat);
+	public static Count instance(final Integer successCount,
+			final Integer errorCount) {
+		return new Count(successCount, errorCount);
+	}
 	
+	private Count(final Integer successCount,
+			final Integer errorCount) {
+		this.successCount  = successCount;
+		this.errorCount = errorCount;
+	}
+
+	public Integer getSuccessCount() {
+		return successCount;
+	}
+
+	public Integer getErrorCount() {
+		return errorCount;
+	}
+
 }
