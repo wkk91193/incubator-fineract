@@ -179,18 +179,22 @@ public class OfficesApiResource {
     }
 
     @GET
-    @Path("bulkimporttemplate")
+    @Path("downloadtemplate")
     @Produces("application/vnd.ms-excel")
-    public Response getOfficeTemplate(@QueryParam("entityType")final String entityType,@QueryParam("officeId")final Long officeId) {
-        return bulkImportWorkbookPopulatorService.getTemplate(entityType, officeId,null,
-                null,null,null,null,null,null,null,null);
+    public Response getOfficeTemplate(@QueryParam("locale") final String locale,
+    			@QueryParam("dateFormat") final String dateFormat) {
+        return this.bulkImportWorkbookPopulatorService.getTemplate(OfficeApiConstants.OFFICE_RESOURCE_NAME,
+        			this.context.authenticatedUser().getOffice().getId(), null,
+                null,null,null,null,null,null,null,null, locale, dateFormat);
     }
 
     @POST
-    @Path("bulkuploadtemplate")
+    @Path("uploadtemplate")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response postOfficeTemplate(@QueryParam("entityType")final String entityType,@FormDataParam("file") InputStream uploadedInputStream,
-            @FormDataParam("file") FormDataContentDisposition fileDetail){
-        return bulkImportWorkbookService.importWorkbook(entityType, uploadedInputStream,fileDetail);
+    public Response postOfficeTemplate(@FormDataParam("file") InputStream uploadedInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileDetail,
+            @FormDataParam("locale") final String locale, @FormDataParam("dateFormat") final String dateFormat){
+        return this.bulkImportWorkbookService.importWorkbook(OfficeApiConstants.OFFICE_RESOURCE_NAME,
+        		uploadedInputStream,fileDetail, locale, dateFormat);
     }
 }

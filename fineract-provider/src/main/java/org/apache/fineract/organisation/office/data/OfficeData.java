@@ -21,9 +21,7 @@ package org.apache.fineract.organisation.office.data;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 
-import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
 import org.joda.time.LocalDate;
 
 /**
@@ -47,22 +45,16 @@ public class OfficeData implements Serializable {
     private String locale;
     private String dateFormat;
 
-    public OfficeData(String name, Long parentId,LocalDate openingDate,String externalId,Integer rowIndex) {
-
-        this.name = name;
-        this.externalId = externalId;
-        this.openingDate = openingDate;
-        this.parentId = parentId;
-        this.locale = TemplatePopulateImportConstants.LOCALE;
-        this.dateFormat = TemplatePopulateImportConstants.DATE_FORMAT;
-        this.rowIndex = rowIndex;
-        this.nameDecorated = null;
-        this.id = null;
-        this.hierarchy = null;
-        this.parentName = null;
-        this.allowedParents = null;
+    public static OfficeData importInstance(final String name, final Long parentId, final LocalDate openingDate,final String externalId) {
+    		return new OfficeData(null, name, null, externalId, openingDate, null, parentId, null, null);
     }
-
+    
+    public void setImportFields(final Integer rowIndex, final String locale, final String dateFormat) {
+    		this.rowIndex = rowIndex;
+    		this.locale = locale;
+    		this.dateFormat = dateFormat;
+    }
+    
     public Integer getRowIndex() {
         return rowIndex;
     }

@@ -32,9 +32,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 
-public abstract class AbstractImportHandler implements ImportHandler {
+public class ImportHandlerUtils  {
 
-    protected Integer getNumberOfRows(Sheet sheet, int primaryColumn) {
+    public static Integer getNumberOfRows(Sheet sheet, int primaryColumn) {
         Integer noOfEntries = 1;
         // getLastRowNum and getPhysicalNumberOfRows showing false values
         // sometimes
@@ -45,11 +45,11 @@ public abstract class AbstractImportHandler implements ImportHandler {
         return noOfEntries;
     }
 
-    protected boolean isNotImported(Row row, int statusColumn) {
+    public static Boolean isNotImported(Row row, int statusColumn) {
         return !readAsString(statusColumn, row).equals(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
     }
 
-    protected Long readAsLong(int colIndex, Row row) {
+    public static Long readAsLong(int colIndex, Row row) {
             Cell c = row.getCell(colIndex);
             if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
                 return null;
@@ -70,7 +70,7 @@ public abstract class AbstractImportHandler implements ImportHandler {
     }
 
 
-    protected String readAsString(int colIndex, Row row) {
+    public static String readAsString(int colIndex, Row row) {
 
             Cell c = row.getCell(colIndex);
             if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
@@ -93,20 +93,20 @@ public abstract class AbstractImportHandler implements ImportHandler {
     }
 
 
-    private String trimEmptyDecimalPortion(String result) {
+    public static String trimEmptyDecimalPortion(String result) {
         if(result != null && result.endsWith(".0"))
             return	result.split("\\.")[0];
         else
             return result;
     }
 
-    protected LocalDate readAsDate(int colIndex, Row row) {
+    public static LocalDate readAsDate(int colIndex, Row row, final String format) {
         try{
             Cell c = row.getCell(colIndex);
             if(c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
                 return null;
 
-            DateFormat dateFormat = new SimpleDateFormat(TemplatePopulateImportConstants.DATE_FORMAT);
+            DateFormat dateFormat = new SimpleDateFormat(format);
             Date date=dateFormat.parse(dateFormat.format(c.getDateCellValue()));
             LocalDate localDate=new LocalDate(date);
             return localDate;
@@ -116,19 +116,19 @@ public abstract class AbstractImportHandler implements ImportHandler {
         }
     }
 
-    protected void writeString(int colIndex, Row row, String value) {
+    public static void writeString(int colIndex, Row row, String value) {
         if(value!=null)
         row.createCell(colIndex).setCellValue(value);
     }
 
-    protected CellStyle getCellStyle(Workbook workbook, IndexedColors color) {
+    public static CellStyle getCellStyle(Workbook workbook, IndexedColors color) {
         CellStyle style = workbook.createCellStyle();
         style.setFillForegroundColor(color.getIndex());
         style.setFillPattern(CellStyle.SOLID_FOREGROUND);
         return style;
     }
 
-    protected String parseStatus(String errorMessage) {
+    public static String parseStatus(String errorMessage) {
         StringBuffer message = new StringBuffer();
         JsonObject obj = new JsonParser().parse(errorMessage.trim()).getAsJsonObject();
         JsonArray array = obj.getAsJsonArray("errors");

@@ -34,7 +34,5 @@ public class TemplatePopulateImportConstants {
     public final static String STATUS_CELL_IMPORTED="Imported";
     public final static String STATUS_COLUMN_HEADER_NAME="Status";
 
-    public final static String DATE_FORMAT="yyyy-MM-dd";
-    public final static String LOCALE="en";
 
 }

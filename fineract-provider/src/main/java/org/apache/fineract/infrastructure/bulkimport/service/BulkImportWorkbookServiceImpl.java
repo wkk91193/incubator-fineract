@@ -28,7 +28,6 @@ import javax.ws.rs.core.Response;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.bulkimport.data.ImportFormatType;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandler;
-import org.apache.fineract.infrastructure.bulkimport.importhandler.office.OfficeImportHandler;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.organisation.office.api.OfficeApiConstants;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -37,6 +36,7 @@ import org.apache.poi.util.IOUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import com.google.common.io.Files;
@@ -44,15 +44,20 @@ import com.sun.jersey.core.header.FormDataContentDisposition;
 
 @Service
 public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService {
-    private PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+	
+    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final ApplicationContext applicationContext;
 
     @Autowired
-    public BulkImportWorkbookServiceImpl(final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+    public BulkImportWorkbookServiceImpl(final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+    		final ApplicationContext applicationContext) {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.applicationContext = applicationContext;
     }
 
     @Override
-    public Response importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail) {
+    public Response importWorkbook(final String entityType, final InputStream inputStream,
+    		final FormDataContentDisposition fileDetail, final String locale, final String dateFormat) {
         if (entityType != null && inputStream != null && fileDetail != null) {
             try {
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -64,7 +69,7 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
                 final TikaInputStream tikaInputStream = TikaInputStream.get(clonedInputStream);
                 final String fileType = tika.detect(tikaInputStream);
                 final String fileExtension = Files.getFileExtension(fileDetail.getFileName()).toLowerCase();
-                ImportFormatType format = ImportFormatType.of(fileExtension);
+                ImportFormatType format = ImportFormatType.from(fileExtension);
                 if (format.name().equalsIgnoreCase(fileType)) {
                     throw new GeneralPlatformDomainRuleException("error.msg.invalid.file.extension",
                             "Uploaded file extension is not recognized.");
@@ -73,13 +78,12 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
                 Workbook workbook = new HSSFWorkbook(clonedInputStreamWorkbook);
                 ImportHandler importHandler = null;
                 if (entityType.trim().equalsIgnoreCase(OfficeApiConstants.OFFICE_RESOURCE_NAME)) {
-                    importHandler = new OfficeImportHandler(workbook);
+                    importHandler = this.applicationContext.getBean("officeImportHandler", ImportHandler.class);
                 } else {
                     throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
                             "Unable to find requested resource");
                 }
-                importHandler.readExcelFile();
-                importHandler.Upload(commandsSourceWritePlatformService);
+                importHandler.process(workbook, locale, dateFormat);
                 return Response.ok(fileDetail.getFileName() + " uploaded successfully").build();
             } catch (IOException ex) {
                 throw new GeneralPlatformDomainRuleException("error.msg.io.exception", "IO exception occured with " + fileDetail.getFileName() + " " + ex.getMessage());

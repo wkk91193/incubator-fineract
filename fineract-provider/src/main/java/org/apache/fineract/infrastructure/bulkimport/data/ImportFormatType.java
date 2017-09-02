@@ -37,7 +37,7 @@ public enum ImportFormatType {
         return format;
     }
 
-    public static ImportFormatType of(String name) {
+    public static ImportFormatType from(String name) {
         for(ImportFormatType type : ImportFormatType.values()) {
             if(type.name().equalsIgnoreCase(name)) {
                 return type;

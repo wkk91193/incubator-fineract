@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
@@ -29,15 +30,14 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import org.apache.fineract.infrastructure.bulkimport.populator.WorkbookPopulator;
 import org.apache.fineract.infrastructure.bulkimport.populator.office.OfficeWorkbookPopulator;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
+import org.apache.fineract.infrastructure.core.serialization.JsonParserHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.api.OfficeApiConstants;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
-
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -56,8 +56,9 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 
 	@Override
 	public Response getTemplate(final String entityType, final Long officeId, final Long staffId,final Long centerId,
-			final Long clientId,final Long groupId, final Long productId,final Long fundId,
-			final Long paymentTypeId,final String code,final Long glAccountId) {
+			final Long clientId, final Long groupId, final Long productId,final Long fundId,
+			final Long paymentTypeId,final String code,final Long glAccountId,
+			final String locale, final String dateFormat) {
 		if (entityType!=null) {
 			WorkbookPopulator populator = null;
 			final Workbook workbook = new HSSFWorkbook();
@@ -66,14 +67,14 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 			} else
 				throw new GeneralPlatformDomainRuleException("error.msg.unable.to.find.resource",
 						"Unable to find requested resource");
-			populator.populate(workbook);
+			populator.populate(workbook, dateFormat);
 			return buildResponse(workbook, entityType);
 		}else {
 			throw new GeneralPlatformDomainRuleException("error.msg.entityType.null",
 					"Given entityType null");
 		}
 	}
-	private WorkbookPopulator populateOfficeWorkbook(Long officeId) {
+	private WorkbookPopulator populateOfficeWorkbook(final Long officeId) {
 		this.context.authenticatedUser().validateHasReadPermission(OfficeApiConstants.OFFICE_RESOURCE_NAME);
 		List<OfficeData> offices = fetchOffices(officeId);
 		return new OfficeWorkbookPopulator(offices);
@@ -100,7 +101,6 @@ public class BulkImportWorkbookPopulatorServiceImpl implements BulkImportWorkboo
 		if (officeId == null) {
 			Boolean includeAllOffices = Boolean.TRUE;
 			offices = (List) this.officeReadPlatformService.retrieveAllOffices(includeAllOffices, null);
-			// System.out.println("Offices List size : "+offices.size());
 		} else {
 			offices = new ArrayList<>();
 			offices.add(this.officeReadPlatformService.retrieveOffice(officeId));

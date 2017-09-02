@@ -18,61 +18,78 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.importhandler.office;
 
-import com.google.gson.GsonBuilder;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.bulkimport.constants.OfficeConstants;
 import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
-import org.apache.fineract.infrastructure.bulkimport.importhandler.AbstractImportHandler;
+import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandler;
+import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandlerUtils;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.helper.DateSerializer;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.organisation.office.data.OfficeData;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.joda.time.LocalDate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.gson.GsonBuilder;
 
-public class OfficeImportHandler extends AbstractImportHandler {
-    private final List<OfficeData> offices;
-    private final Workbook workbook;
+@Service
+public class OfficeImportHandler implements ImportHandler {
+	
+	private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
 
-
-    public OfficeImportHandler(Workbook workbook) {
-        this.offices=new ArrayList<OfficeData>();
-        this.workbook=workbook;
+    @Autowired
+    public OfficeImportHandler(final PortfolioCommandSourceWritePlatformService
+    		commandsSourceWritePlatformService) {
+    		this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
     }
-
+    
     @Override
-    public void readExcelFile() {
+	public void process(final Workbook workbook, final String locale, final String dateFormat) {
+    		final List<OfficeData> offices = readExcelFile(workbook, locale, dateFormat);
+    		upload(workbook, offices);
+	}
+
+    private List<OfficeData> readExcelFile(final Workbook workbook, final String locale, final String dateFormat) {
+    		final List<OfficeData> offices = new ArrayList<> ();
         Sheet officeSheet=workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
-        Integer noOfEntries=getNumberOfRows(officeSheet,0);
-        for (int rowIndex=1;rowIndex<noOfEntries;rowIndex++){
+        Integer noOfEntries = ImportHandlerUtils.getNumberOfRows(officeSheet,0);
+        for (int rowIndex=1;rowIndex<noOfEntries;rowIndex++) {
             Row row;
                 row=officeSheet.getRow(rowIndex);
-                if (isNotImported(row, OfficeConstants.STATUS_COL)){
-                    offices.add(readOffice(row));
+                if (ImportHandlerUtils.isNotImported(row, OfficeConstants.STATUS_COL)){
+                    offices.add(readOffice(row, locale, dateFormat));
                 }
         }
+        return offices;
     }
 
-    private OfficeData readOffice(Row row) {
-        String officeName =readAsString(OfficeConstants.OFFICE_NAME_COL,row);
-        Long parentId=readAsLong(OfficeConstants.PARENT_OFFICE_ID_COL,row);
-        LocalDate openedDate=readAsDate(OfficeConstants.OPENED_ON_COL,row);
-        String externalId=readAsLong(OfficeConstants.EXTERNAL_ID_COL,row).toString();
-        return new OfficeData(officeName,parentId,openedDate,externalId,row.getRowNum());
+    private OfficeData readOffice(Row row, final String locale, final String dateFormat) {
+        String officeName = ImportHandlerUtils.readAsString(OfficeConstants.OFFICE_NAME_COL,row);
+        Long parentId= ImportHandlerUtils.readAsLong(OfficeConstants.PARENT_OFFICE_ID_COL,row);
+        LocalDate openedDate= ImportHandlerUtils.readAsDate(OfficeConstants.OPENED_ON_COL,row, dateFormat);
+        String externalId= ImportHandlerUtils.readAsString(OfficeConstants.EXTERNAL_ID_COL,row);
+        OfficeData office = OfficeData.importInstance(officeName,parentId,openedDate,externalId);
+        office.setImportFields(row.getRowNum(), locale, dateFormat);
+        return office;
     }
 
-    @Override
-    public void Upload(PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
-        Sheet clientSheet=workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
+    private void upload(final Workbook workbook, final List<OfficeData> offices) {
+        Sheet clientSheet = workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LocalDate.class, new DateSerializer());
         for (OfficeData office: offices) {
             try {
-                String payload=gsonBuilder.create().toJson(office);
+                String payload = gsonBuilder.create().toJson(office);
                 final CommandWrapper commandRequest = new CommandWrapperBuilder() //
                         .createOffice() //
                         .withJson(payload) //
@@ -80,19 +97,20 @@ public class OfficeImportHandler extends AbstractImportHandler {
                 final CommandProcessingResult result = commandsSourceWritePlatformService.logCommandSource(commandRequest);
                 Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(OfficeConstants.STATUS_COL);
                 statusCell.setCellValue(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
-                statusCell.setCellStyle(getCellStyle(workbook, IndexedColors.LIGHT_GREEN));
+                statusCell.setCellStyle(ImportHandlerUtils.getCellStyle(workbook, IndexedColors.LIGHT_GREEN));
             } catch (RuntimeException e) {
                 e.printStackTrace();
                 String message="";
                 if (e.getMessage()!=null)
-                 message = parseStatus(e.getMessage());
+                		message = ImportHandlerUtils.parseStatus(e.getMessage());
                 Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(OfficeConstants.STATUS_COL);
                 statusCell.setCellValue(message);
-                statusCell.setCellStyle(getCellStyle(workbook, IndexedColors.RED));
+                statusCell.setCellStyle(ImportHandlerUtils.getCellStyle(workbook, IndexedColors.RED));
 
             }
         }
         clientSheet.setColumnWidth(OfficeConstants.STATUS_COL, TemplatePopulateImportConstants.SMALL_COL_SIZE);
-        writeString(OfficeConstants.STATUS_COL, clientSheet.getRow(0), TemplatePopulateImportConstants.STATUS_COLUMN_HEADER_NAME);
+        ImportHandlerUtils.writeString(OfficeConstants.STATUS_COL, clientSheet.getRow(0), TemplatePopulateImportConstants.STATUS_COLUMN_HEADER_NAME);
     }
+
 }
