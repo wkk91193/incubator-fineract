@@ -26,6 +26,7 @@ import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.bulkimport.constants.OfficeConstants;
 import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
+import org.apache.fineract.infrastructure.bulkimport.data.Count;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandler;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandlerUtils;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.helper.DateSerializer;
@@ -54,9 +55,9 @@ public class OfficeImportHandler implements ImportHandler {
     }
     
     @Override
-	public void process(final Workbook workbook, final String locale, final String dateFormat) {
+	public Count process(final Workbook workbook, final String locale, final String dateFormat) {
     		final List<OfficeData> offices = readExcelFile(workbook, locale, dateFormat);
-    		upload(workbook, offices);
+    		return upload(workbook, offices);
 	}
 
     private List<OfficeData> readExcelFile(final Workbook workbook, final String locale, final String dateFormat) {
@@ -83,10 +84,12 @@ public class OfficeImportHandler implements ImportHandler {
         return office;
     }
 
-    private void upload(final Workbook workbook, final List<OfficeData> offices) {
+    private Count upload(final Workbook workbook, final List<OfficeData> offices) {
         Sheet clientSheet = workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LocalDate.class, new DateSerializer());
+        int successCount = 0;
+        int errorCount = 0;
         for (OfficeData office: offices) {
             try {
                 String payload = gsonBuilder.create().toJson(office);
@@ -95,10 +98,12 @@ public class OfficeImportHandler implements ImportHandler {
                         .withJson(payload) //
                         .build(); //
                 final CommandProcessingResult result = commandsSourceWritePlatformService.logCommandSource(commandRequest);
+                successCount ++;
                 Cell statusCell = clientSheet.getRow(office.getRowIndex()).createCell(OfficeConstants.STATUS_COL);
                 statusCell.setCellValue(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
                 statusCell.setCellStyle(ImportHandlerUtils.getCellStyle(workbook, IndexedColors.LIGHT_GREEN));
             } catch (RuntimeException e) {
+            		errorCount++;
                 e.printStackTrace();
                 String message="";
                 if (e.getMessage()!=null)
@@ -110,7 +115,10 @@ public class OfficeImportHandler implements ImportHandler {
             }
         }
         clientSheet.setColumnWidth(OfficeConstants.STATUS_COL, TemplatePopulateImportConstants.SMALL_COL_SIZE);
-        ImportHandlerUtils.writeString(OfficeConstants.STATUS_COL, clientSheet.getRow(0), TemplatePopulateImportConstants.STATUS_COLUMN_HEADER_NAME);
+        ImportHandlerUtils.writeString(OfficeConstants.STATUS_COL, clientSheet.getRow(0),
+        		TemplatePopulateImportConstants.STATUS_COLUMN_HEADER_NAME);
+        
+        return Count.instance(successCount, errorCount);
     }
 
 }

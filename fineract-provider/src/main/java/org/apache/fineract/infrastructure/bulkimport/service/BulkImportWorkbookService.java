@@ -18,13 +18,12 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.service;
 
-import com.sun.jersey.core.header.FormDataContentDisposition;
-
-import javax.ws.rs.core.Response;
 import java.io.InputStream;
+
+import com.sun.jersey.core.header.FormDataContentDisposition;
 
 public interface BulkImportWorkbookService {
 
-    public Response importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail,
+    public Long importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail,
     		final String locale, final String dateFormat);
 }
