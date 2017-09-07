@@ -35,7 +35,7 @@ public class BulkImportEvent extends ApplicationEvent {
 	
 	private BulkImportEvent(final String tenantIdentifier, final Workbook workbook,
 			final Long importId, final String locale, final String dateFormat) {
-		super(null);
+		super(BulkImportEvent.class);
 		this.tenantIdentifier = tenantIdentifier;
 		this.workbook = workbook;
 		this.importId = importId;

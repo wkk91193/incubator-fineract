@@ -31,6 +31,7 @@ import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandler
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandlerUtils;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.helper.DateSerializer;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -47,17 +48,19 @@ import com.google.gson.GsonBuilder;
 public class OfficeImportHandler implements ImportHandler {
 	
 	private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final PlatformSecurityContext securityContext;
 
     @Autowired
     public OfficeImportHandler(final PortfolioCommandSourceWritePlatformService
-    		commandsSourceWritePlatformService) {
+    		commandsSourceWritePlatformService, final PlatformSecurityContext securityContext) {
     		this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+    		this.securityContext=securityContext;
     }
     
     @Override
 	public Count process(final Workbook workbook, final String locale, final String dateFormat) {
     		final List<OfficeData> offices = readExcelFile(workbook, locale, dateFormat);
-    		return upload(workbook, offices);
+    		return upload(workbook, offices,dateFormat);
 	}
 
     private List<OfficeData> readExcelFile(final Workbook workbook, final String locale, final String dateFormat) {
@@ -77,17 +80,17 @@ public class OfficeImportHandler implements ImportHandler {
     private OfficeData readOffice(Row row, final String locale, final String dateFormat) {
         String officeName = ImportHandlerUtils.readAsString(OfficeConstants.OFFICE_NAME_COL,row);
         Long parentId= ImportHandlerUtils.readAsLong(OfficeConstants.PARENT_OFFICE_ID_COL,row);
-        LocalDate openedDate= ImportHandlerUtils.readAsDate(OfficeConstants.OPENED_ON_COL,row, dateFormat);
+        LocalDate openedDate= ImportHandlerUtils.readAsDate(OfficeConstants.OPENED_ON_COL,row);
         String externalId= ImportHandlerUtils.readAsString(OfficeConstants.EXTERNAL_ID_COL,row);
         OfficeData office = OfficeData.importInstance(officeName,parentId,openedDate,externalId);
         office.setImportFields(row.getRowNum(), locale, dateFormat);
         return office;
     }
 
-    private Count upload(final Workbook workbook, final List<OfficeData> offices) {
+    private Count upload(final Workbook workbook, final List<OfficeData> offices,final String dateFormat) {
         Sheet clientSheet = workbook.getSheet(OfficeConstants.OFFICE_WORKBOOK_SHEET_NAME);
         GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(LocalDate.class, new DateSerializer());
+        gsonBuilder.registerTypeAdapter(LocalDate.class, new DateSerializer(dateFormat));
         int successCount = 0;
         int errorCount = 0;
         for (OfficeData office: offices) {

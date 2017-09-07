@@ -185,8 +185,7 @@ public class OfficesApiResource {
     public Response getOfficeTemplate(@QueryParam("locale") final String locale,
     			@QueryParam("dateFormat") final String dateFormat) {
         return this.bulkImportWorkbookPopulatorService.getTemplate(OfficeApiConstants.OFFICE_RESOURCE_NAME,
-        			null, null,
-                null,null,null,null,null,null,null,null, locale, dateFormat);
+        			null, null, locale, dateFormat);
     }
 
     @POST
@@ -196,7 +195,7 @@ public class OfficesApiResource {
             @FormDataParam("file") FormDataContentDisposition fileDetail,
             @FormDataParam("locale") final String locale, @FormDataParam("dateFormat") final String dateFormat){
         final Long importDocumentId = this.bulkImportWorkbookService.importWorkbook(GlobalEntityType.OFFICES.name(),
-        		uploadedInputStream,fileDetail, locale, dateFormat);
+        		uploadedInputStream,fileDetail, locale,dateFormat);
         return this.toApiJsonSerializer.serialize(importDocumentId);
     }
 }

@@ -33,6 +33,7 @@ import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 
 @Entity
 @Table(name = "m_import_document")
@@ -73,20 +74,20 @@ public class ImportDocument extends AbstractPersistableCustom<Long>{
 		
 	}
 	
-	public static ImportDocument instance(final Document document, final LocalDate importTime, 
+	public static ImportDocument instance(final Document document, final LocalDateTime importTime,
 			final Integer entity_type, final AppUser createdBy, final Integer totalRecords) {
 		
 		final Boolean completed = Boolean.FALSE;
         final Integer successCount = 0;
         final Integer failureCount = 0;
-        final LocalDate endTime = null;
+        final LocalDateTime endTime =LocalDateTime.now();
         
 		return new ImportDocument(document, importTime, endTime, completed, entity_type,
 				createdBy, totalRecords, successCount, failureCount);
 	}
 	
-	private ImportDocument(final Document document, final LocalDate importTime,
-			final LocalDate endTime, Boolean completed, final Integer entity_type,
+	private ImportDocument(final Document document, final LocalDateTime importTime,
+			final LocalDateTime endTime, Boolean completed, final Integer entity_type,
 			final AppUser createdBy, final Integer totalRecords, final Integer successCount,
 			final Integer failureCount) {
 		this.document = document;
@@ -101,7 +102,7 @@ public class ImportDocument extends AbstractPersistableCustom<Long>{
 		
 	}
 	
-	public void update(final LocalDate endTime, final Integer successCount,
+	public void update(final LocalDateTime endTime, final Integer successCount,
 			final Integer errorCount) {
 		this.endTime = endTime.toDate();
 		this.completed = Boolean.TRUE;

@@ -26,7 +26,6 @@ import java.net.URLConnection;
 
 import org.apache.fineract.infrastructure.bulkimport.data.BulkImportEvent;
 import org.apache.fineract.infrastructure.bulkimport.data.GlobalEntityType;
-import org.apache.fineract.infrastructure.bulkimport.data.ImportFormatType;
 import org.apache.fineract.infrastructure.bulkimport.domain.ImportDocument;
 import org.apache.fineract.infrastructure.bulkimport.domain.ImportDocumentRepository;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandlerUtils;
@@ -45,9 +44,9 @@ import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.google.common.io.Files;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 
 @Service
@@ -75,7 +74,7 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
     @Override
     public Long importWorkbook(final String entity, final InputStream inputStream,
     		final FormDataContentDisposition fileDetail, final String locale, final String dateFormat) {
-        if (entity != null && inputStream != null && fileDetail != null) {
+        if (entity != null && inputStream != null && fileDetail != null&&locale!=null&&dateFormat!=null) {
             try {
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 IOUtils.copy(inputStream, baos);
@@ -85,7 +84,6 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
                 final Tika tika = new Tika();
                 final TikaInputStream tikaInputStream = TikaInputStream.get(clonedInputStream);
                 final String fileType = tika.detect(tikaInputStream);
-                final String fileExtension = Files.getFileExtension(fileDetail.getFileName()).toLowerCase();
                 if (!fileType.contains("msoffice")) {
                     throw new GeneralPlatformDomainRuleException("error.msg.invalid.file.extension",
                             "Uploaded file extension is not recognized.");
@@ -111,7 +109,7 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
             }
         } else {
             throw new GeneralPlatformDomainRuleException("error.msg.entityType.null",
-                    "Given entityType null or file not found");
+                    "One or more of the given parameters null or not found");
         }
     }
     
@@ -121,18 +119,26 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
     		final String locale, final String dateFormat) {
     	
     		final String fileName = fileDetail.getFileName();
+
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+        //create a document containing excel data
         final Long documentId = this.documentWritePlatformService.createInternalDocument(
         		DOCUMENT_MANAGEMENT_ENTITY.IMPORT.name(),
         		this.securityContext.authenticatedUser().getId(), null, clonedInputStreamWorkbook,
         		URLConnection.guessContentTypeFromName(fileName), fileName, null, fileName);
+
+        //Gets the newly created Document instance
         final Document document = this.documentRepository.findOne(documentId);
-        
+
+        //Create Table m_import_document and push default data.
         final ImportDocument importDocument = ImportDocument.instance(document,
-        		DateUtils.getLocalDateOfTenant(), entityType.getValue(),
+        		DateUtils.getLocalDateTimeOfTenant(), entityType.getValue(),
         		this.securityContext.authenticatedUser(),
         		ImportHandlerUtils.getNumberOfRows(workbook.getSheetAt(0),
         				primaryColumn));
         this.importDocumentRepository.saveAndFlush(importDocument);
+
+        // Upon instance creation  push excel data,and updates endtime,error count and success count to m_import_document table
         BulkImportEvent event = BulkImportEvent.instance(ThreadLocalContextUtil.getTenant()
         		.getTenantIdentifier(), workbook, importDocument.getId(), locale, dateFormat);
         applicationContext.publishEvent(event);

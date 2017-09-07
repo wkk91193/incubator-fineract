@@ -25,6 +25,8 @@ import com.google.gson.JsonParser;
 import org.apache.fineract.infrastructure.bulkimport.constants.TemplatePopulateImportConstants;
 import org.apache.poi.ss.usermodel.*;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -35,10 +37,10 @@ import java.util.Iterator;
 public class ImportHandlerUtils  {
 
     public static Integer getNumberOfRows(Sheet sheet, int primaryColumn) {
-        Integer noOfEntries = 1;
+        Integer noOfEntries = 0;
         // getLastRowNum and getPhysicalNumberOfRows showing false values
         // sometimes
-        while (sheet.getRow(noOfEntries) !=null && sheet.getRow(noOfEntries).getCell(primaryColumn) != null) {
+        while (sheet.getRow(noOfEntries+1) !=null && sheet.getRow(noOfEntries+1).getCell(primaryColumn) != null) {
             noOfEntries++;
         }
 
@@ -46,50 +48,68 @@ public class ImportHandlerUtils  {
     }
 
     public static Boolean isNotImported(Row row, int statusColumn) {
-        return !readAsString(statusColumn, row).equals(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
+        if (readAsString(statusColumn,row)!=null) {
+            return !readAsString(statusColumn, row).equals(TemplatePopulateImportConstants.STATUS_CELL_IMPORTED);
+        }else {
+            return true;
+        }
     }
 
     public static Long readAsLong(int colIndex, Row row) {
-            Cell c = row.getCell(colIndex);
-            if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
-                return null;
-            FormulaEvaluator eval = row.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
-            if(c.getCellType() == Cell.CELL_TYPE_FORMULA) {
-                if(eval!=null) {
-                    CellValue val = eval.evaluate(c);
-                    return ((Double) val.getNumberValue()).longValue();
-                }
-            }
-            else if (c.getCellType()==Cell.CELL_TYPE_NUMERIC){
-                return ((Double) c.getNumericCellValue()).longValue();
-            }
-            else {
-                return Long.parseLong(row.getCell(colIndex).getStringCellValue());
-            }
+        Cell c = row.getCell(colIndex);
+        if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
             return null;
+        FormulaEvaluator eval = row.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
+        if(c.getCellType() == Cell.CELL_TYPE_FORMULA) {
+            if(eval!=null) {
+                CellValue val = eval.evaluate(c);
+                return ((Double) val.getNumberValue()).longValue();
+            }
+        }
+        else if (c.getCellType()==Cell.CELL_TYPE_NUMERIC){
+            return ((Double) c.getNumericCellValue()).longValue();
+        }
+        else {
+            return Long.parseLong(row.getCell(colIndex).getStringCellValue());
+        }
+        return null;
     }
 
 
     public static String readAsString(int colIndex, Row row) {
 
-            Cell c = row.getCell(colIndex);
-            if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
-                return "";
-            FormulaEvaluator eval = row.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
-            if(c.getCellType() == Cell.CELL_TYPE_FORMULA) {
-                    if (eval!=null) {
-                        CellValue val = eval.evaluate(c);
-                        String res = trimEmptyDecimalPortion(val.getStringValue());
-                        return res.trim();
-                    }
-            }else if(c.getCellType()==Cell.CELL_TYPE_STRING) {
-                String res = trimEmptyDecimalPortion(c.getStringCellValue().trim());
-                return res.trim();
 
-            }else  {
-                return ((Double) row.getCell(colIndex).getNumericCellValue()).intValue() + "";
+        Cell c = row.getCell(colIndex);
+        if (c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
+            return null;
+        FormulaEvaluator eval = row.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
+        if(c.getCellType() == Cell.CELL_TYPE_FORMULA) {
+            if (eval!=null) {
+                CellValue val = eval.evaluate(c);
+                String res = trimEmptyDecimalPortion(val.getStringValue());
+                if (res!=null) {
+                    if (!res.equals("")) {
+                        return res.trim();
+                    } else {
+                        return null;
+                    }
+                }else {
+                    return null;
+                }
+            }else {
+                return null;
             }
-          return null;
+        }else if(c.getCellType()==Cell.CELL_TYPE_STRING) {
+            String res = trimEmptyDecimalPortion(c.getStringCellValue().trim());
+            return res.trim();
+
+        }else if(c.getCellType()==Cell.CELL_TYPE_NUMERIC) {
+            return ((Double) row.getCell(colIndex).getNumericCellValue()).intValue() + "";
+        }else if (c.getCellType()==Cell.CELL_TYPE_BOOLEAN){
+            return c.getBooleanCellValue()+"";
+        }else {
+            return null;
+        }
     }
 
 
@@ -100,20 +120,13 @@ public class ImportHandlerUtils  {
             return result;
     }
 
-    public static LocalDate readAsDate(int colIndex, Row row, final String format) {
-        try{
+    public static LocalDate readAsDate(int colIndex, Row row) {
             Cell c = row.getCell(colIndex);
             if(c == null || c.getCellType() == Cell.CELL_TYPE_BLANK)
                 return null;
 
-            DateFormat dateFormat = new SimpleDateFormat(format);
-            Date date=dateFormat.parse(dateFormat.format(c.getDateCellValue()));
-            LocalDate localDate=new LocalDate(date);
+            LocalDate localDate=new LocalDate(c.getDateCellValue());
             return localDate;
-        }  catch  (ParseException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public static void writeString(int colIndex, Row row, String value) {

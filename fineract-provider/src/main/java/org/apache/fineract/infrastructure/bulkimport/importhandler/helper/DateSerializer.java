@@ -18,19 +18,24 @@
  */
 package org.apache.fineract.infrastructure.bulkimport.importhandler.helper;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import org.joda.time.LocalDate;
-import org.joda.time.format.ISODateTimeFormat;
+        import com.google.gson.JsonElement;
+        import com.google.gson.JsonPrimitive;
+        import com.google.gson.JsonSerializationContext;
+        import com.google.gson.JsonSerializer;
+        import org.joda.time.LocalDate;
 
-import java.lang.reflect.Type;
+        import java.lang.reflect.Type;
 
 public class DateSerializer implements JsonSerializer<LocalDate> {
-    
+
+    private final String dateFormat;
+
+    public DateSerializer(String dateFormat) {
+        this.dateFormat = dateFormat;
+    }
+
     @Override
     public JsonElement serialize(LocalDate src, Type typeOfSrc, JsonSerializationContext context) {
-        return new JsonPrimitive(ISODateTimeFormat.date().print(src));
+        return new JsonPrimitive(src.toString(dateFormat));
     }
 }
