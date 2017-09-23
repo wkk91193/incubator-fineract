@@ -33,3 +33,7 @@ CREATE TABLE `m_import_document` (
   CONSTRAINT `FK_m_import_m_document` FOREIGN KEY (`document_id`) REFERENCES `m_document` (`id`),
   CONSTRAINT `FK_m_import_m_appuser` FOREIGN KEY (`createdby_id`) REFERENCES `m_appuser` (`id`)
 );
+
+INSERT INTO `m_permission`
+(`grouping`,`code`,`entity_name`,`action_name`,`can_maker_checker`) VALUES
+('infrastructure','READ_IMPORT','IMPORT','READ', 0);

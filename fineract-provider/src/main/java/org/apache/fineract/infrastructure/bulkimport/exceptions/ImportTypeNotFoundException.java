@@ -16,20 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.infrastructure.bulkimport.service;
+package org.apache.fineract.infrastructure.bulkimport.exceptions;
 
-import java.io.InputStream;
-import java.util.Collection;
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformResourceNotFoundException;
 
-import org.apache.fineract.infrastructure.bulkimport.data.GlobalEntityType;
-import org.apache.fineract.infrastructure.bulkimport.data.ImportData;
+public class ImportTypeNotFoundException extends AbstractPlatformResourceNotFoundException {
 
-import com.sun.jersey.core.header.FormDataContentDisposition;
+    public ImportTypeNotFoundException(final String entityType) {
+        super("error.msg.entity.type.invalid", "Entity type " + entityType + " does not exist", entityType);
+    }
 
-public interface BulkImportWorkbookService {
-
-    public Long importWorkbook(String entityType, InputStream inputStream, FormDataContentDisposition fileDetail,
-    		final String locale, final String dateFormat);
-    
-    public Collection<ImportData> getImports(GlobalEntityType type);
 }

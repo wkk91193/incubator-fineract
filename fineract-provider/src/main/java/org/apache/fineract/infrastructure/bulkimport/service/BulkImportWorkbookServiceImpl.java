@@ -23,14 +23,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
 
 import org.apache.fineract.infrastructure.bulkimport.data.BulkImportEvent;
 import org.apache.fineract.infrastructure.bulkimport.data.GlobalEntityType;
+import org.apache.fineract.infrastructure.bulkimport.data.ImportData;
 import org.apache.fineract.infrastructure.bulkimport.domain.ImportDocument;
 import org.apache.fineract.infrastructure.bulkimport.domain.ImportDocumentRepository;
 import org.apache.fineract.infrastructure.bulkimport.importhandler.ImportHandlerUtils;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
 import org.apache.fineract.infrastructure.documentmanagement.domain.DocumentRepository;
@@ -42,8 +48,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.util.IOUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -57,18 +66,21 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
     private final DocumentWritePlatformService documentWritePlatformService;
     private final DocumentRepository documentRepository;
     private final ImportDocumentRepository importDocumentRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public BulkImportWorkbookServiceImpl(final ApplicationContext applicationContext,
     		final PlatformSecurityContext securityContext,
     		final DocumentWritePlatformService documentWritePlatformService,
     		final DocumentRepository documentRepository,
-    		final ImportDocumentRepository importDocumentRepository) {
+    		final ImportDocumentRepository importDocumentRepository,
+    		final RoutingDataSource dataSource) {
         this.applicationContext = applicationContext;
         this.securityContext = securityContext;
         this.documentWritePlatformService = documentWritePlatformService;
         this.documentRepository = documentRepository;
         this.importDocumentRepository = importDocumentRepository;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     @Override
@@ -143,5 +155,45 @@ public class BulkImportWorkbookServiceImpl implements BulkImportWorkbookService 
         		.getTenantIdentifier(), workbook, importDocument.getId(), locale, dateFormat);
         applicationContext.publishEvent(event);
         return importDocument.getId();
+    }
+    
+    public Collection<ImportData> getImports(GlobalEntityType type) {
+    		this.securityContext.authenticatedUser();
+
+        final ImportMapper rm = new ImportMapper();
+        final String sql = "select " + rm.schema() + " order by i.id desc";
+
+        return this.jdbcTemplate.query(sql, rm, new Object[] {type.getValue()});
+    }
+    
+    private static final class ImportMapper implements RowMapper<ImportData> {
+
+        public String schema() {
+        		final StringBuilder sql = new StringBuilder();
+        		sql.append("i.id as id, i.document_id as documentId, d.name as name, i.import_time as importTime, i.end_time as endTime, ")
+        		.append("i.completed as completed, i.total_records as totalRecords, i.success_count as successCount, ")  
+			.append(	"i.failure_count as failureCount, i.createdby_id as createdBy ")
+			.append("from m_import_document i inner join m_document d on i.document_id=d.id ") 
+			.append("where i.entity_type= ? ");
+        		return sql.toString();
+        }
+
+        @Override
+        public ImportData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final Long documentId = rs.getLong("documentId");
+            final String name = rs.getString("name");
+            final LocalDate importTime = JdbcSupport.getLocalDate(rs, "importTime");
+            final LocalDate endTime = JdbcSupport.getLocalDate(rs, "endTime");
+            final Boolean completed = rs.getBoolean("completed");
+            final Integer totalRecords = JdbcSupport.getInteger(rs, "totalRecords");
+            final Integer successCount = JdbcSupport.getInteger(rs, "successCount");
+            final Integer failureCount = JdbcSupport.getInteger(rs, "failureCount");
+            final Long createdBy = rs.getLong("createdBy");
+
+            return ImportData.instance(id, documentId, importTime, endTime, completed,
+            		name, createdBy, totalRecords, successCount, failureCount);
+        }
     }
 }
