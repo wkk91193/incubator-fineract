@@ -73,6 +73,8 @@ public class TenantAwareTenantIdentifierFilter extends GenericFilterBean {
     private final String tenantRequestHeader = "Fineract-Platform-TenantId";
     private final boolean exceptionIfHeaderMissing = true;
     private final String apiUri = "/api/v1/";
+    private static final String PASSWORD_REGEX = "password=[^&]+";
+    private static final String PASSWORD_MASK = "password=***";
 
     @Autowired
     public TenantAwareTenantIdentifierFilter(final BasicAuthTenantDetailsService basicAuthTenantDetailsService,
@@ -143,6 +145,11 @@ public class TenantAwareTenantIdentifierFilter extends GenericFilterBean {
                     }
                     TenantAwareTenantIdentifierFilter.firstRequestProcessed = true;
                 }
+                String maskedPath = request.getRequestURI()
+                        + (request.getQueryString() == null ? "" : request.getQueryString().replaceAll(PASSWORD_REGEX, PASSWORD_MASK))
+                        + " "
+                        + request.getProtocol();
+                request.setAttribute("maskedPath", maskedPath);
                 chain.doFilter(request, response);
             }
         } catch (final InvalidTenantIdentiferException e) {
